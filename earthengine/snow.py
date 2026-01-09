@@ -4,24 +4,27 @@ from earthengine.regions import EarthEngineRegion
 from utility.earthengineutilities import create_date_range
 
 
-
 class SnowProducts:
     def __init__(self):
         self.region = EarthEngineRegion()
         pass
 
+    """
+    Get recent modis data with specified bands for a specified time interval (delta, default = 8)
+    """
+
     def get_modis_data(self, delta, **kwargs):
         default_bands = ['NDSI_Snow_Cover', 'NDSI_Snow_Cover_Basic_QA', 'NDSI_Snow_Cover_Class']
         for band in kwargs.items():
-            if(band not in default_bands):
+            if (band not in default_bands):
                 default_bands.append(band)
         modis_data = ee.ImageCollection(default_bands)
         date_range = create_date_range(delta)
         start_date = date_range[0]
         end_date = date_range[1]
         modis_data = ee.ImageCollection("MODIS/061/MOD10A1")
-        modis_data = self.maskSnowCover(modis_data).filterDate(start_date,end_date).select(default_bands)
-        return  modis_data
+        modis_data = self.maskSnowCover(modis_data).filterDate(start_date, end_date).select(default_bands)
+        return modis_data
 
     """
     Create recent composite of Modis snow cover
@@ -30,7 +33,10 @@ class SnowProducts:
 
      """
 
-    def get_modis_snow_cover(self, delta=10, region=None, is_png = False):
+    def get_modis_snow_cover(self, delta=10, region=None, is_png=False):
+
+        def legend (vis_params):
+            return vis_params
 
         modis_data = self.get_modis_data(delta).select('NDSI_Snow_Cover').median()
 
@@ -39,19 +45,19 @@ class SnowProducts:
             case 'himalayas':
                 regiontobeclipped = self.region.gmba_region("Himalayas")
                 modis_data = modis_data.clip(regiontobeclipped)
-            case 'alps' :
+            case 'alps':
                 regiontobeclipped = self.region.gmba_region("Alps")
                 modis_data = modis_data.clip(regiontobeclipped)
-            case 'greenland' :
+            case 'greenland':
                 regiontobeclipped = self.region.gmba_region("Greenland")
-                modis_data= modis_data.clip(regiontobeclipped)
-            case 'arctic' :
+                modis_data = modis_data.clip(regiontobeclipped)
+            case 'arctic':
                 regiontobeclipped = self.region.gmba_region("Arctic")
                 modis_data = modis_data.clip(regiontobeclipped)
-            case 'antarctic' :
+            case 'antarctic':
                 regiontobeclipped = self.region.lsib_region("Antarctica")
                 modis_data = modis_data.clip(regiontobeclipped)
-        return modis_data
+        return {"image" : modis_data , "legend" : legend }
 
     """
     Mask the modis snow cover data 
@@ -65,7 +71,8 @@ class SnowProducts:
     Masked image collection
     """
 
-    def maskSnowCover(self,modis_data,snow_band='NDSI_Snow_Cover' ,qa_band='NDSI_Snow_Cover_Basic_QA', class_band='NDSI_Snow_Cover_Class'):
+    def maskSnowCover(self, modis_data, snow_band='NDSI_Snow_Cover', qa_band='NDSI_Snow_Cover_Basic_QA',
+                      class_band='NDSI_Snow_Cover_Class'):
         def mask_image(image):
             image = ee.Image(image)
 
@@ -87,12 +94,4 @@ class SnowProducts:
                 .updateMask(land_mask)
             )
 
-        return  modis_data.map(mask_image)
-
-
-
-
-
-
-
-
+        return modis_data.map(mask_image)
