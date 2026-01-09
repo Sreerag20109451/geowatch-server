@@ -6,9 +6,13 @@ from api.snow import snowrouter
 
 from fastapi import FastAPI
 
+from fastapi.middleware.cors import CORSMiddleware
+
 from earthengine.auth import  EarthEngineAuth
 
 app = FastAPI()
+
+
 
 
 
@@ -25,7 +29,24 @@ Initialize Google Earth Engine
 """
 earthengineAuth = EarthEngineAuth()
 earthengineAuth.initialize_earth_engine(service_accnt,key_path)
+
+
+"""
+Middlewares
+"""
+
+app.add_middleware(CORSMiddleware, allow_origins=["*"],
+                   allow_credentials=True, allow_methods=["*"],
+                   allow_headers=["*"])
+
+
+""" 
+Routers
+
+"""
 app.include_router(snowrouter)
+
+
 
 
 
