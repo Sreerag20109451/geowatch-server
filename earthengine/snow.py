@@ -1,7 +1,7 @@
 import ee
 
 from earthengine.regions import EarthEngineRegion
-from utility.earthengineutilities import create_date_range
+from utility.earthengineutilities import create_date_range, create_legend
 
 
 class SnowProducts:
@@ -13,17 +13,17 @@ class SnowProducts:
     Get recent modis data with specified bands for a specified time interval (delta, default = 8)
     """
 
-    def get_modis_data(self, delta, **kwargs):
+    def get_modis_data(self, delta, threshold, **kwargs ,):
         default_bands = ['NDSI_Snow_Cover', 'NDSI_Snow_Cover_Basic_QA', 'NDSI_Snow_Cover_Class']
         for band in kwargs.items():
             if (band not in default_bands):
                 default_bands.append(band)
-        modis_data = ee.ImageCollection(default_bands)
         date_range = create_date_range(delta)
         start_date = date_range[0]
         end_date = date_range[1]
-        modis_data = ee.ImageCollection("MODIS/061/MOD10A1")
-        modis_data = self.maskSnowCover(modis_data).filterDate(start_date, end_date).select(default_bands)
+        modis_data = ee.ImageCollection("MODIS/061/MOD10A1").select(default_bands)
+        modis_data = self.maskSnowCover(modis_data, threshold ).filterDate(start_date, end_date).select(default_bands)
+        print(modis_data)
         return modis_data
 
     """
@@ -33,12 +33,8 @@ class SnowProducts:
 
      """
 
-    def get_modis_snow_cover(self, delta=10, region=None, is_png=False):
-
-        def legend (vis_params):
-            return vis_params
-
-        modis_data = self.get_modis_data(delta).select('NDSI_Snow_Cover').median()
+    def get_modis_snow_cover(self, vis_params, delta=10, region=None, is_png=False, threshold = 2 ):
+        modis_data = self.get_modis_data(delta, threshold).select('NDSI_Snow_Cover').median()
 
         match region:
 
@@ -57,7 +53,8 @@ class SnowProducts:
             case 'antarctic':
                 regiontobeclipped = self.region.lsib_region("Antarctica")
                 modis_data = modis_data.clip(regiontobeclipped)
-        return {"image" : modis_data , "legend" : legend }
+        legendObj = create_legend(vis_params, 'Modis Snow Cover -Ranges')
+        return {"image" : modis_data , "legend" : legendObj }
 
     """
     Mask the modis snow cover data 
@@ -71,20 +68,20 @@ class SnowProducts:
     Masked image collection
     """
 
-    def maskSnowCover(self, modis_data, snow_band='NDSI_Snow_Cover', qa_band='NDSI_Snow_Cover_Basic_QA',
+    def maskSnowCover(self, modis_data, threshold =2, snow_band='NDSI_Snow_Cover', qa_band='NDSI_Snow_Cover_Basic_QA',
                       class_band='NDSI_Snow_Cover_Class'):
         def mask_image(image):
             image = ee.Image(image)
 
-            snow_mask = image.select(snow_band).gt(2)
+            snow_mask = image.select(snow_band).gt(threshold)
             qa_mask = image.select(qa_band).lt(3)
             class_img = image.select(class_band)
             land_mask = (
-                class_img.neq(237)  # inland water
-                .And(class_img.neq(239))  # ocean
-                .And(class_img.neq(250))  # cloud
-                .And(class_img.neq(211))  # night
-                .And(class_img.neq(200))  # missing
+                class_img.neq(237)
+                .And(class_img.neq(239))
+                .And(class_img.neq(250))
+                .And(class_img.neq(211))
+                .And(class_img.neq(200))
             )
 
             return (

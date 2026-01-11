@@ -20,13 +20,12 @@ async def snow_cover(vis_params=None, region=None, is_png = False):
         region = region.lower()
 
     try:
-        recent_modis_snow = snowproducts.get_modis_recent_data(10, region = region, is_png = is_png)
-        mapDict = maps.get_mapid(recent_modis_snow,vis_params=vis_params)
+        recent_modis_snow_dict = snowproducts.get_modis_snow_cover(vis_params, 10,region = region, is_png = is_png)
+        mapDict = maps.get_mapid(recent_modis_snow_dict["image"],vis_params=vis_params)
         print(mapDict)
 
-        return  JSONResponse(status_code=200, content= { "url" : mapDict["url"] , "vis_params" : vis_params })
+        return  JSONResponse(status_code=200, content= { "url" : mapDict["url"] , "vis_params" : vis_params, "legend" :recent_modis_snow_dict["legend"] })
 
-        return {"mapdic" : mapDict["mapobj"], "mapid" : mapDict["mapid"], "url" : mapDict["url"], "vis_params" : vis_params}
     except Exception as e:
         return JSONResponse(status_code=500, content={"error" : str(e)})
 

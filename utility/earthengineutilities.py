@@ -1,6 +1,4 @@
 
-
-
 """
 Create date range with the specified delta
 Args :Delta
@@ -18,6 +16,17 @@ def create_date_range(delta):
 
     return [start_date, end_date]
 
+
+def create_legend(vis_params, chartname):
+    palette = vis_params["palette"]
+    min = vis_params["min"]
+    max = vis_params["max"]
+    unitrange = (max - min) / len(palette)
+    legend = {}
+
+    for i, color in enumerate(palette):
+        legend[color] = f"{min+(i)*unitrange} - {min + (i+1)*unitrange }"
+    return { 'legend' : legend , 'chartname' : chartname}
 
 
 

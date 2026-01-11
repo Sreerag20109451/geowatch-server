@@ -1,7 +1,7 @@
 import unittest
 import datetime
 
-from utility.earthengineutilities import create_date_range
+from utility.earthengineutilities import create_date_range, create_legend
 
 
 class UtilityTests(unittest.TestCase):
@@ -22,6 +22,16 @@ class UtilityTests(unittest.TestCase):
         self.assertEqual(len(daterange), 2)
         self.assertEqual(daterange[0], delta_starttm_formatted)
         self.assertEqual(daterange[1], now_date_formatted)
+
+
+def test_legend(self):
+    legend_test_data = {
+        'palette': ['red', 'green', 'yellow', 'green'],
+        'min': 0,
+        'max': 80
+    }
+    legend = create_legend(legend_test_data, 'Test legend')
+
 
 
 if __name__ == '__main__':
