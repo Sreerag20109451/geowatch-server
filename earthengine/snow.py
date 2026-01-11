@@ -28,13 +28,13 @@ class SnowProducts:
 
     """
     Create recent composite of Modis snow cover
-    args: delta 
+    args: visualization_parameters, delta , region , is_png, snow_threshold 
     returns : Recent modis snow cover
 
      """
 
     def get_modis_snow_cover(self, vis_params, delta=10, region=None, is_png=False, threshold = 2 ):
-        modis_data = self.get_modis_data(delta, threshold).select('NDSI_Snow_Cover').median()
+        modis_data = self.get_modis_data(delta, threshold).select('NDSI_Snow_Cover').mean()
 
         match region:
 
