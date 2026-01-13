@@ -13,7 +13,7 @@ class SnowProducts:
     Get recent modis data with specified bands for a specified time interval (delta, default = 8)
     """
 
-    def get_modis_data(self, delta, threshold, **kwargs ,):
+    def get_modis_data(self, delta, threshold, qa_mask="default" , snow_class_mask="default", **kwargs ,):
         default_bands = ['NDSI_Snow_Cover', 'NDSI_Snow_Cover_Basic_QA', 'NDSI_Snow_Cover_Class']
         for band in kwargs.items():
             if (band not in default_bands):
@@ -22,7 +22,7 @@ class SnowProducts:
         start_date = date_range[0]
         end_date = date_range[1]
         modis_data = ee.ImageCollection("MODIS/061/MOD10A1").select(default_bands)
-        modis_data = self.maskSnowCover(modis_data, threshold ).filterDate(start_date, end_date).select(default_bands)
+        modis_data = self.maskSnowCover(modis_data, threshold, qa_mask=qa_mask, snow_class_mask=snow_class_mask ).filterDate(start_date, end_date).select(default_bands)
         print(modis_data)
         return modis_data
 
@@ -33,8 +33,8 @@ class SnowProducts:
 
      """
 
-    def get_modis_snow_cover(self, vis_params, delta=10, region=None, is_png=False, threshold = 2 ):
-        modis_data = self.get_modis_data(delta, threshold).select('NDSI_Snow_Cover').mean()
+    def get_modis_snow_cover(self, vis_params, delta=10, region=None, is_png=False, threshold = 2, qa_mask="default" , snow_class_mask="default" ):
+        modis_data = self.get_modis_data(delta, threshold, qa_mask, snow_class_mask).select('NDSI_Snow_Cover').mean()
 
         match region:
 
@@ -68,27 +68,46 @@ class SnowProducts:
     Masked image collection
     """
 
-    def maskSnowCover(self, modis_data, threshold =2, snow_band='NDSI_Snow_Cover', qa_band='NDSI_Snow_Cover_Basic_QA',
-                      class_band='NDSI_Snow_Cover_Class'):
+    def maskSnowCover(self, modis_data, threshold=2,
+                      snow_band='NDSI_Snow_Cover',
+                      qa_band='NDSI_Snow_Cover_Basic_QA',
+                      class_band='NDSI_Snow_Cover_Class',
+                      qa_mask="default", snow_class_mask="default"):
+
         def mask_image(image):
             image = ee.Image(image)
 
-            snow_mask = image.select(snow_band).gt(threshold)
-            qa_mask = image.select(qa_band).lt(3)
-            class_img = image.select(class_band)
-            land_mask = (
-                class_img.neq(237)
-                .And(class_img.neq(239))
-                .And(class_img.neq(250))
-                .And(class_img.neq(211))
-                .And(class_img.neq(200))
-            )
+            # QA mask
+            qa_pixel_mask = None
+            if image.bandNames().contains(qa_band) and qa_mask != "default":
+                match qa_mask:
+                    case 'best':
+                        qa_pixel_mask = image.select(qa_band).eq(0)
+                    case 'good':
+                        qa_pixel_mask = image.select(qa_band).lte(1)
+                    case 'ok':
+                        qa_pixel_mask = image.select(qa_band).lte(2)
+            if qa_pixel_mask is not None:
+                image = image.updateMask(qa_pixel_mask)
 
-            return (
-                image
-                .updateMask(snow_mask)
-                .updateMask(qa_mask)
-                .updateMask(land_mask)
-            )
+            # Snow mask
+            if image.bandNames().contains(snow_band):
+                snow_mask = image.select(snow_band).gt(threshold)
+                image = image.updateMask(snow_mask)
+
+            # Land / class mask
+            if image.bandNames().contains(class_band):
+                class_img = image.select(class_band)
+                land_mask = (
+                    class_img.neq(237)
+                    .And(class_img.neq(239))
+                    .And(class_img.neq(250))
+                    .And(class_img.neq(211))
+                    .And(class_img.neq(200))
+                )
+                image = image.updateMask(land_mask)
+
+            return image
 
         return modis_data.map(mask_image)
+
