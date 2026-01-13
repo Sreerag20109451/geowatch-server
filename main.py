@@ -16,6 +16,10 @@ load_dotenv(dotenv_path=env_path)
 
 service_accnt = os.getenv("SERVICE_ACCOUNT")
 key_json_str = os.environ.get("KEY_JSON")
+key_json_str = os.environ.get("KEY_JSON")
+if not key_json_str:
+    raise RuntimeError("KEY_JSON environment variable not found! Did you set it in Railway for this environment?")
+
 key_json_dict = json.loads(key_json_str)
 
 # Use a temporary file for key.json
