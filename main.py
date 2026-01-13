@@ -1,8 +1,6 @@
 import json
 import os
 import pathlib
-import tempfile
-from dotenv import load_dotenv
 
 from api.snow import snowrouter
 from fastapi import FastAPI
@@ -11,25 +9,32 @@ from earthengine.auth import EarthEngineAuth
 
 app = FastAPI()
 
+# Load env variables from Railway or .env
 env_path = pathlib.Path(__file__).parent / "config" / ".env"
-load_dotenv(dotenv_path=env_path)
+if env_path.exists():
+    from dotenv import load_dotenv
+    load_dotenv(dotenv_path=env_path)
 
 service_accnt = os.getenv("SERVICE_ACCOUNT")
 key_json_str = os.environ.get("KEY_JSON")
-key_json_str = os.environ.get("KEY_JSON")
+
 if not key_json_str:
     raise RuntimeError("KEY_JSON environment variable not found! Did you set it in Railway for this environment?")
 
 key_json_dict = json.loads(key_json_str)
 
-# Use a temporary file for key.json
-with tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=False) as tmp:
-    json.dump(key_json_dict, tmp)
-    key_path = tmp.name  # <- this defines key_path for EE SDK
+# Ensure /services exists (Railway volume mount)
+volume_path = "/services"
+os.makedirs(volume_path, exist_ok=True)
 
-# Initialize Google Earth Engine
+# Write key.json into /services
+key_file_path = os.path.join(volume_path, "key.json")
+with open(key_file_path, "w") as f:
+    json.dump(key_json_dict, f, indent=2)
+
+# Initialize Google Earth Engine using /services/key.json
 earthengineAuth = EarthEngineAuth()
-earthengineAuth.initialize_earth_engine(service_accnt, key_path)
+earthengineAuth.initialize_earth_engine(service_accnt, key_file_path)
 
 # Middlewares
 app.add_middleware(
@@ -45,4 +50,4 @@ app.include_router(snowrouter)
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
+    return {"message": "Server is running, key.json written to /services!"}
