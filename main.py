@@ -1,6 +1,7 @@
 import json
 import os
 import pathlib
+import ee
 
 from api.snow import snowrouter
 from fastapi import FastAPI
@@ -55,3 +56,12 @@ def read_key_json():
         return {"error": "key.json not found!"}
     with open(key_path) as f:
         return json.load(f)
+
+@app.get("/testee")
+def test_ee():
+    try:
+        img = ee.Image("MODIS/006/MOD10A1/2020_03_01").select("NDSI_Snow_Cover")
+        mapid = img.getMapId({"min": 0, "max": 100, "palette": ["red","yellow","green","blue"]})
+        return {"mapid": mapid}
+    except Exception as e:
+        return {"error": str(e)}
