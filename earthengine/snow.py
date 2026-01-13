@@ -53,7 +53,7 @@ class SnowProducts:
             case 'antarctic':
                 regiontobeclipped = self.region.lsib_region("Antarctica")
                 modis_data = modis_data.clip(regiontobeclipped)
-        legendObj = create_legend(vis_params, 'Modis Snow Cover -Ranges')
+        legendObj = create_legend(vis_params, 'Modis Snow Cover')
         return {"image" : modis_data , "legend" : legendObj }
 
     """
@@ -77,8 +77,8 @@ class SnowProducts:
         def mask_image(image):
             image = ee.Image(image)
 
-            # QA mask
             qa_pixel_mask = None
+            snow_class_pixel_mask = None
             if image.bandNames().contains(qa_band) and qa_mask != "default":
                 match qa_mask:
                     case 'best':
@@ -89,6 +89,37 @@ class SnowProducts:
                         qa_pixel_mask = image.select(qa_band).lte(2)
             if qa_pixel_mask is not None:
                 image = image.updateMask(qa_pixel_mask)
+
+            if image.bandNames().contains(class_band) and snow_class_mask != "default":
+                match snow_class_mask:
+                    case 'ocean':
+                        snow_class_pixel_mask = image.select(class_band).neq(239)
+                    case 'inland_water':
+                        snow_class_pixel_mask = image.select(class_band).neq(237)
+                    case 'cloud':
+                        snow_class_pixel_mask = image.select(class_band).neq(250)
+                    case 'night':
+                        snow_class_pixel_mask = image.select(class_band).neq(211)
+                    case 'saturated':
+                        snow_class_pixel_mask = image.select(class_band).neq(254)
+                    case 'missing':
+                        snow_class_pixel_mask = image.select(class_band).neq(200)
+                    case 'no_decision':
+                        snow_class_pixel_mask = image.select(class_band).neq(201)
+                    case 'all':
+                        class_img = image.select(class_band)
+                        snow_class_pixel_mask = (
+                            class_img.neq(200)  # missing
+                            .And(class_img.neq(201))  # no decision
+                            .And(class_img.neq(211))  # night
+                            .And(class_img.neq(237))  # inland water
+                            .And(class_img.neq(239))  # ocean
+                            .And(class_img.neq(250))  # cloud
+                            .And(class_img.neq(254))  # saturated
+                        )
+
+            if snow_class_mask != "default":
+                image = image.updateMask(snow_class_pixel_mask)
 
             # Snow mask
             if image.bandNames().contains(snow_band):
