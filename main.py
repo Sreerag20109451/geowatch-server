@@ -1,56 +1,44 @@
+import json
 import os
 import pathlib
+import tempfile
 from dotenv import load_dotenv
 
 from api.snow import snowrouter
-
 from fastapi import FastAPI
-
 from fastapi.middleware.cors import CORSMiddleware
-
-from earthengine.auth import  EarthEngineAuth
+from earthengine.auth import EarthEngineAuth
 
 app = FastAPI()
 
-
-
-
-
-env_path = pathlib.Path(__file__).parent / "config"/".env"
-key_path = pathlib.Path(__file__).parent / "key.json"
+env_path = pathlib.Path(__file__).parent / "config" / ".env"
 load_dotenv(dotenv_path=env_path)
 
 service_accnt = os.getenv("SERVICE_ACCOUNT")
+key_json_str = os.environ.get("KEY_JSON")
+key_json_dict = json.loads(key_json_str)
 
+# Use a temporary file for key.json
+with tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=False) as tmp:
+    json.dump(key_json_dict, tmp)
+    key_path = tmp.name  # <- this defines key_path for EE SDK
 
-
-"""
-Initialize Google Earth Engine
-"""
+# Initialize Google Earth Engine
 earthengineAuth = EarthEngineAuth()
-earthengineAuth.initialize_earth_engine(service_accnt,key_path)
+earthengineAuth.initialize_earth_engine(service_accnt, key_path)
 
+# Middlewares
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-"""
-Middlewares
-"""
-
-app.add_middleware(CORSMiddleware, allow_origins=["*"],
-                   allow_credentials=True, allow_methods=["*"],
-                   allow_headers=["*"])
-
-
-""" 
-Routers
-
-"""
+# Routers
 app.include_router(snowrouter)
-
-
-
-
 
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
-
