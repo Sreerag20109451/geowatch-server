@@ -13,7 +13,7 @@ class SnowProducts:
     Get recent modis data with specified bands for a specified time interval (delta, default = 8)
     """
 
-    def get_modis_data(self, delta, threshold, qa_mask="default" , snow_class_mask="default", **kwargs ,):
+    def get_modis_data(self, delta, threshold=40, qa_mask="default" , snow_class_mask="default", **kwargs ,):
         default_bands = ['NDSI_Snow_Cover', 'NDSI_Snow_Cover_Basic_QA', 'NDSI_Snow_Cover_Class']
         for band in kwargs.items():
             if (band not in default_bands):
@@ -33,8 +33,8 @@ class SnowProducts:
 
      """
 
-    def get_modis_snow_cover(self, vis_params, delta=10, region=None, is_png=False, threshold = 2, qa_mask="default" , snow_class_mask="default" ):
-        modis_data = self.get_modis_data(delta, threshold, qa_mask, snow_class_mask).select('NDSI_Snow_Cover').mean()
+    def get_modis_snow_cover(self, vis_params, delta=10, region=None, is_png=False, threshold = 40, qa_mask="default" , snow_class_mask="default" ):
+        modis_data = self.get_modis_data(delta, threshold, qa_mask, snow_class_mask).select('NDSI_Snow_Cover').median()
 
         match region:
 
@@ -53,7 +53,7 @@ class SnowProducts:
             case 'antarctic':
                 regiontobeclipped = self.region.lsib_region("Antarctica")
                 modis_data = modis_data.clip(regiontobeclipped)
-        legendObj = create_legend(vis_params, 'Modis Snow Cover')
+        legendObj = create_legend(vis_params, 'Modis - NDSI')
         return {"image" : modis_data , "legend" : legendObj }
 
     """
@@ -68,7 +68,7 @@ class SnowProducts:
     Masked image collection
     """
 
-    def maskSnowCover(self, modis_data, threshold=2,
+    def maskSnowCover(self, modis_data, threshold=40,
                       snow_band='NDSI_Snow_Cover',
                       qa_band='NDSI_Snow_Cover_Basic_QA',
                       class_band='NDSI_Snow_Cover_Class',
@@ -77,8 +77,19 @@ class SnowProducts:
         def mask_image(image):
             image = ee.Image(image)
 
+            class_image = image.select(class_band)
+            class_mask = (
+                class_image.neq(200).And(class_image.neq(201))
+            )
+            image = image.updateMask(class_mask)
             qa_pixel_mask = None
-            snow_class_pixel_mask = None
+            snow_class_pixel_mask= None
+            if snow_class_mask == "default":
+                snow_class_pixel_mask = class_mask
+            else:
+                class_mask = None
+
+
             if image.bandNames().contains(qa_band) and qa_mask != "default":
                 match qa_mask:
                     case 'best':
@@ -94,7 +105,7 @@ class SnowProducts:
                 match snow_class_mask:
                     case 'ocean':
                         snow_class_pixel_mask = image.select(class_band).neq(239)
-                    case 'inland_water':
+                    case 'inlandw':
                         snow_class_pixel_mask = image.select(class_band).neq(237)
                     case 'cloud':
                         snow_class_pixel_mask = image.select(class_band).neq(250)
@@ -104,7 +115,7 @@ class SnowProducts:
                         snow_class_pixel_mask = image.select(class_band).neq(254)
                     case 'missing':
                         snow_class_pixel_mask = image.select(class_band).neq(200)
-                    case 'no_decision':
+                    case 'nodecision':
                         snow_class_pixel_mask = image.select(class_band).neq(201)
                     case 'all':
                         class_img = image.select(class_band)
@@ -121,22 +132,11 @@ class SnowProducts:
             if snow_class_mask != "default":
                 image = image.updateMask(snow_class_pixel_mask)
 
+
             # Snow mask
             if image.bandNames().contains(snow_band):
                 snow_mask = image.select(snow_band).gt(threshold)
                 image = image.updateMask(snow_mask)
-
-            # Land / class mask
-            if image.bandNames().contains(class_band):
-                class_img = image.select(class_band)
-                land_mask = (
-                    class_img.neq(237)
-                    .And(class_img.neq(239))
-                    .And(class_img.neq(250))
-                    .And(class_img.neq(211))
-                    .And(class_img.neq(200))
-                )
-                image = image.updateMask(land_mask)
 
             return image
 
