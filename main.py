@@ -49,5 +49,9 @@ app.add_middleware(
 app.include_router(snowrouter)
 
 @app.get("/")
-def read_root():
-    return {"message": "Server is running, key.json written to /services!"}
+def read_key_json():
+    key_path = "/services/key.json"
+    if not os.path.exists(key_path):
+        return {"error": "key.json not found!"}
+    with open(key_path) as f:
+        return json.load(f)
