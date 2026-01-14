@@ -1,5 +1,8 @@
 
 
+from utility.earthengineutilities import create_legacy_tile_url
+
+
 class EarthEngineMaps:
     def __init__(self):
         pass
@@ -12,9 +15,8 @@ class EarthEngineMaps:
     """
     def get_mapid(self, imagecollection, vis_params):
         mapidObj = imagecollection.getMapId(vis_params)
-        tile_fetcher = mapidObj["tile_fetcher"]
-        url = tile_fetcher.url_format
-        return  {  "url" : url, "mapobj" : mapidObj }
+        legacy_url = create_legacy_tile_url(mapidObj["mapid"])
+        return  {  "url" : legacy_url, "mapobj" : mapidObj }
 
     def clip_with_geometry(self, image, geometry):
         return  image.clip(geometry)

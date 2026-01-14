@@ -1,6 +1,7 @@
 import json
 import os
 import pathlib
+from dotenv import load_dotenv
 import ee
 
 from api.snow import snowrouter
@@ -8,36 +9,47 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from earthengine.auth import EarthEngineAuth
 
-app = FastAPI()
+app = FastAPI(redirect_slashes=False)
 
-# Load env variables from Railway or .env
-env_path = pathlib.Path(__file__).parent / "config" / ".env"
-if env_path.exists():
-    from dotenv import load_dotenv
-    load_dotenv(dotenv_path=env_path)
+#  Define Paths
+BASE_DIR = pathlib.Path(__file__).parent.resolve()
+ENV_PATH = BASE_DIR / "config" / ".env"
+LOCAL_KEY = BASE_DIR / "key.json"         
+RAILWAY_MOUNT = "/services/key.json"      
 
+if ENV_PATH.exists():
+    load_dotenv(dotenv_path=ENV_PATH)
+    print(f"Loaded environment from {ENV_PATH}")
+else:
+    print("file found; relying on system environment variables")
+
+# Service Credential Logic
 service_accnt = os.getenv("SERVICE_ACCOUNT")
-key_json_str = os.environ.get("KEY_JSON")
+key_file_path = None
 
-if not key_json_str:
-    raise RuntimeError("KEY_JSON environment variable not found! Did you set it in Railway for this environment?")
+if LOCAL_KEY.exists():
+    key_file_path = str(LOCAL_KEY)
+    print(f"Found local key.json at {key_file_path}")
 
-key_json_dict = json.loads(key_json_str)
+elif os.path.exists(RAILWAY_MOUNT):
+    key_file_path = RAILWAY_MOUNT
+    print(f"Using Railway Volume at {key_file_path}")
 
-# Ensure /services exists (Railway volume mount)
-volume_path = "/services"
-os.makedirs(volume_path, exist_ok=True)
+else:
+    key_json_str = os.environ.get("KEY_JSON")
+    if key_json_str:
+        key_file_path = str(BASE_DIR / "temp_key.json")
+        with open(key_file_path, "w") as f:
+            f.write(key_json_str)
+        print("☁️ Using KEY_JSON environment variable")
+    else:
+        raise RuntimeError("No key.json found locally OR in /services!")
 
-# Write key.json into /services
-key_file_path = os.path.join(volume_path, "key.json")
-with open(key_file_path, "w") as f:
-    json.dump(key_json_dict, f, indent=2)
-
-# Initialize Google Earth Engine using /services/key.json
+# Initialize Earth Engine
 earthengineAuth = EarthEngineAuth()
 earthengineAuth.initialize_earth_engine(service_accnt, key_file_path)
 
-# Middlewares
+# Middlewares 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -46,16 +58,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Routers
 app.include_router(snowrouter)
 
 @app.get("/")
-def read_key_json():
-    key_path = "/services/key.json"
-    if not os.path.exists(key_path):
-        return {"error": "key.json not found!"}
-    with open(key_path) as f:
-        return json.load(f)
+def read_key_info():
+    return {"status": "authenticated", "key_source": key_file_path}
 
 @app.get("/testee")
 def test_ee():
