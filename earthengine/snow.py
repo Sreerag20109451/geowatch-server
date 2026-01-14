@@ -4,7 +4,7 @@ from earthengine.regions import EarthEngineRegion
 from utility.earthengineutilities import create_date_range, create_legend
 
 
-class SnowProducts:
+class ModisProducts:
     def __init__(self):
         self.region = EarthEngineRegion()
         pass
@@ -23,7 +23,6 @@ class SnowProducts:
         end_date = date_range[1]
         modis_data = ee.ImageCollection("MODIS/061/MOD10A1").select(default_bands)
         modis_data = self.maskSnowCover(modis_data, threshold, qa_mask=qa_mask, snow_class_mask=snow_class_mask ).filterDate(start_date, end_date).select(default_bands)
-        print(modis_data)
         return modis_data
 
     """
