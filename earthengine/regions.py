@@ -10,7 +10,7 @@ from earthengine.auth import EarthEngineAuth
 class EarthEngineRegion:
     def __init__(self):
         pass
-        # # Load environment variables
+        # Load environment variables
         # self.envpath = pathlib.Path(__file__).parent.parent / "config" / ".env"
         # load_dotenv(dotenv_path=self.envpath)
         # # Read service account and JSON key from env
@@ -30,10 +30,10 @@ class EarthEngineRegion:
         # # Initialize Earth Engine
         # self.eeAuth = EarthEngineAuth()
         # self.eeAuth.initialize_earth_engine(service_account=self.service_account, path_to_key=self.key_path)
-        #
-        # # Load datasets
-        # self.lsib = ee.FeatureCollection("USDOS/LSIB_SIMPLE/2017")
-        # self.gmba = ee.FeatureCollection("projects/geo-watch-483617/assets/gmba")
+
+        # Load datasets
+        self.lsib = ee.FeatureCollection("USDOS/LSIB_SIMPLE/2017")
+        self.gmba = ee.FeatureCollection("projects/geo-watch-483617/assets/gmba")
 
     def get_regional_boundaries(self, region, dataset="lsib", band=None):
         """
