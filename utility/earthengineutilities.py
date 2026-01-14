@@ -29,6 +29,12 @@ def create_legend(vis_params, chartname):
     return { 'legend' : legend , 'chartname' : chartname}
 
 
+def create_legacy_tile_url(mapid):
+
+    legacy_url = f"https://earthengine.googleapis.com/v1/{mapid}/tiles/{{z}}/{{x}}/{{y}}"
+    return legacy_url
+
+
 
 
 

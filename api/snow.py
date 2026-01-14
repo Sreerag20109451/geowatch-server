@@ -2,14 +2,14 @@ import fastapi
 from starlette.responses import JSONResponse
 
 from earthengine.map import EarthEngineMaps
-from earthengine.snow import SnowProducts
+from earthengine.modis.snow import ModisProducts
 from utility.default_vis_params import snow_cover_global_vis_param
 
 
 
 snowrouter  = fastapi.APIRouter()
 
-snowproducts = SnowProducts()
+snowproducts = ModisProducts()
 maps = EarthEngineMaps()
 
 @snowrouter.get("/apiv0/snow/global_snow_cover")
@@ -22,9 +22,11 @@ async def snow_cover(vis_params=None, region=None, is_png = False, qa_mask="defa
     try:
         recent_modis_snow_dict = snowproducts.get_modis_snow_cover(vis_params, 10,region = region, is_png = is_png, qa_mask=qa_mask, snow_class_mask=snow_class_mask)
         mapDict = maps.get_mapid(recent_modis_snow_dict["image"],vis_params=vis_params)
-        print(mapDict)
+      
+        legacy_url = mapDict["url"]
+        print(legacy_url)
 
-        return  JSONResponse(status_code=200, content= { "url" : mapDict["url"] , "vis_params" : vis_params, "legend" :recent_modis_snow_dict["legend"] })
+        return  JSONResponse(status_code=200, content= { "url" : legacy_url , "vis_params" : vis_params, "legend" :recent_modis_snow_dict["legend"] })
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error" : str(e)})
