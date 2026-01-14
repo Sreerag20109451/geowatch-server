@@ -26,7 +26,7 @@ class EarthEngineRegion:
         if cls._ee_initialized:
             return
         
-        BASE_DIR = pathlib.Path(__file__).parent.parent.resolve()
+        BASE_DIR = pathlib.Path(__file__).parent.parent.parent.resolve()
         ENV_PATH = BASE_DIR / "config" / ".env"
         LOCAL_KEY = BASE_DIR / "key.json"         
         RAILWAY_MOUNT = "/services/key.json" 

@@ -2,7 +2,7 @@ import fastapi
 from starlette.responses import JSONResponse
 
 from earthengine.map import EarthEngineMaps
-from earthengine.snow import ModisProducts
+from earthengine.modis.snow import ModisProducts
 from utility.default_vis_params import snow_cover_global_vis_param
 
 
