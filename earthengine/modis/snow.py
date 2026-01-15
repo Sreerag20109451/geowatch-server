@@ -80,13 +80,11 @@ class ModisProducts:
             class_mask = (
                 class_image.neq(200).And(class_image.neq(201))
             )
+
             image = image.updateMask(class_mask)
             qa_pixel_mask = None
-            snow_class_pixel_mask= None
-            if snow_class_mask == "default":
-                snow_class_pixel_mask = class_mask
-            else:
-                class_mask = None
+            snow_class_pixel_mask= ee.Image(1)
+
 
 
             if image.bandNames().contains(qa_band) and qa_mask != "default":
