@@ -13,7 +13,7 @@ snowproducts = ModisProducts()
 maps = EarthEngineMaps()
 
 @snowrouter.get("/apiv0/snow/global_snow_cover")
-async def snow_cover(vis_params=None, region=None, is_png = False, qa_mask="default", snow_class_mask="default"):
+async def snow_cover(vis_params=None, region=None, is_png = False, qa_mask="default", snow_class_mask="default", data_set="modis"):
     if vis_params is None:
         vis_params = snow_cover_global_vis_param
     if region is not  None:
