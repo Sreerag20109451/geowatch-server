@@ -3,33 +3,53 @@ from starlette.responses import JSONResponse
 
 from earthengine.map import EarthEngineMaps
 from earthengine.modis.snow import ModisProducts
-from utility.default_vis_params import snow_cover_global_vis_param
-
-
+from earthengine.sentinel.sentinel import SentinelProducts
+from utility.default_vis_params import snow_cover_global_vis_param, sentinel_ndsi_vis_param
 
 snowrouter  = fastapi.APIRouter()
 
-snowproducts = ModisProducts()
+modisproducts = ModisProducts()
+sentinelproducts = SentinelProducts()
+
 maps = EarthEngineMaps()
 
 @snowrouter.get("/apiv0/snow/global_snow_cover")
-async def snow_cover(vis_params=None, region=None, is_png = False, qa_mask="default", snow_class_mask="default", data_set="modis"):
-    if vis_params is None:
+async def snow_cover( region=None, is_png = False, qa_mask="default", snow_class_mask="default", data_set="modis"):
+    if  data_set == "modis":
         vis_params = snow_cover_global_vis_param
-    if region is not  None:
-        region = region.lower()
+        if region is not None:
+            region = region.lower()
 
-    try:
-        recent_modis_snow_dict = snowproducts.get_modis_snow_cover(vis_params, 10,region = region, is_png = is_png, qa_mask=qa_mask, snow_class_mask=snow_class_mask)
-        mapDict = maps.get_mapid(recent_modis_snow_dict["image"],vis_params=vis_params)
-      
-        legacy_url = mapDict["url"]
-        print(legacy_url)
+        try:
+            recent_modis_snow_dict = modisproducts.get_modis_snow_cover(vis_params, 10, region=region, is_png=is_png,
+                                                                       qa_mask=qa_mask, snow_class_mask=snow_class_mask)
+            mapDict = maps.get_mapid(recent_modis_snow_dict["image"], vis_params=vis_params)
 
-        return  JSONResponse(status_code=200, content= { "url" : legacy_url , "vis_params" : vis_params, "legend" :recent_modis_snow_dict["legend"] })
+            legacy_url = mapDict["url"]
+            print(legacy_url)
 
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error" : str(e)})
+            return JSONResponse(status_code=200, content={"url": legacy_url, "vis_params": vis_params,
+                                                          "legend": recent_modis_snow_dict["legend"]})
+
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"error": str(e)})
+    if data_set == "sentinel":
+        vis_params = sentinel_ndsi_vis_param
+        if region is not None:
+            region = region.lower()
+        try:
+            recent_sentinel_snow_dict = sentinelproducts.get_sentinel_snow_cover_composite(region)
+            mapdict = maps.get_mapid(recent_sentinel_snow_dict["image"], vis_params=vis_params)
+            legacy_url = mapdict["url"]
+            return JSONResponse(status_code=200, content={"url": legacy_url, "vis_params": vis_params,
+                                                          "legend": recent_sentinel_snow_dict["legend"]})
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"error": str(e)})
+
+    return None
+
+
+
 
 
 
