@@ -15,7 +15,8 @@ class EarthEngineRegion:
 
 
 
-    """Initialize GEE
+    """
+    Initialize GEE
 
     Args :None
     Return: None
@@ -26,10 +27,8 @@ class EarthEngineRegion:
         if cls._ee_initialized:
             return
         
-        BASE_DIR = pathlib.Path(__file__).parent.parent.parent.resolve()
+        BASE_DIR = pathlib.Path(__file__).parent.parent.resolve()
         ENV_PATH = BASE_DIR / "config" / ".env"
-        LOCAL_KEY = BASE_DIR / "key.json"         
-        RAILWAY_MOUNT = "/services/key.json" 
 
         if(ENV_PATH.exists()):
             load_dotenv(dotenv_path=ENV_PATH)
@@ -41,8 +40,7 @@ class EarthEngineRegion:
             raise RuntimeError("SERVICE_ACCOUNT environment variable not set")
 
         # Resolve key path
-        base_dir = os.path.dirname(__file__)
-        local_key = os.path.join(base_dir, "key.json")
+        local_key = os.path.join(BASE_DIR, "key.json")
         railway_key = "/services/key.json"
 
         if os.path.exists(local_key):
