@@ -7,6 +7,7 @@ import ee
 from ee import collection
 
 from earthengine.auth import EarthEngineAuth
+from earthengine.regions import EarthEngineRegion
 from utility.default_vis_params import sentinel_ndsi_vis_param
 from utility.earthengineutilities import create_date_range, create_legend
 
@@ -22,6 +23,7 @@ class SentinelProducts:
         
         self._init_ee()
         self.sentinel_msi_collection = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
+        self.region = EarthEngineRegion()
 
 
     """Initialize Earth Engine"""
@@ -72,11 +74,13 @@ class SentinelProducts:
 
     Returns : Sentinel data
     """
-    def get_recent_sentinel_msi_data(self,region, delta=10, cloud_masking=True):
+    def get_recent_sentinel_msi_data(self,region, delta=10):
+        print(region)
         date_range = create_date_range(delta)
         start_date = date_range[0]
         end_date = date_range[1]
 
+        regiontobeclipped = None
         match region:
             case 'himalayas':
                 regiontobeclipped = self.region.gmba_region("Himalayas")
@@ -89,20 +93,21 @@ class SentinelProducts:
             case 'antarctic':
                 regiontobeclipped = self.region.lsib_region("Antarctica")
 
-        sentinel_collection = self.sentinel_msi_collection.filter(start_date,end_date).filterBounds(regiontobeclipped)
+        sentinel_collection = self.sentinel_msi_collection.filterDate(start_date,end_date).filterBounds(regiontobeclipped)
         return {'collection' : sentinel_collection , 'region_geometry' : regiontobeclipped}
 
 
-    def get_sentinel_snow_cover_composite(self, region, delta=10, cloud_masking=True):
+    def get_sentinel_snow_cover_composite(self, region, delta=10, sentnel_cloud_mask=True):
+        print(region)
         vis_param = sentinel_ndsi_vis_param
-        sentinel_msi_collection_data = self.get_recent_sentinel_msi_data(region, delta, cloud_masking)
+        sentinel_msi_collection_data = self.get_recent_sentinel_msi_data(region, delta)
         sentinel_msi_collection = sentinel_msi_collection_data["collection"]
-        region_geometry = sentinel_msi_collection["region_geometry"]
+        region_geometry = sentinel_msi_collection_data["region_geometry"]
         scaled_collection = self.scaleImage(sentinel_msi_collection)
-        if cloud_masking is True:
+        if sentnel_cloud_mask:
             scaled_collection = self.maskClouds(scaled_collection)
         ndsi_collection = self.ndsi(scaled_collection)
-        legend = create_legend(vis_param , "NDSI")
+        legend = create_legend(vis_param , "Sentinel - NDSI")
         ndsi_composite =ndsi_collection.select('NDSI').median()
         return  {"image" : ndsi_composite, "vis_param" : vis_param, "legend" : legend}
 
@@ -118,25 +123,26 @@ class SentinelProducts:
 
     def scaleImage(self, collection):
         def scaleSentinelImage(image):
-            return image.divide(1000)
-        for band in self.reflectance_bands:
-            image = image.select(band)
-            collection.map(scaleSentinelImage)
-        return collection
+            scaled_bands = image.select('B.*').divide(10000)
+            return image.addBands(scaled_bands, overwrite=True)
 
+        return collection.map(scaleSentinelImage)
     """
     Masks the cloud and cirrus cover 
     Args : Sentinel Collection
     Returns : Masked Sentinel collection
     """
-    
+
     def maskClouds(self, collection):
         def maskSentinelImage(image):
             qa = image.select(self.qa_band)
-            cloud_mask = 1 << 10
-            cirrus_mask = 1 << 20
-            mask = qa.bitwiseAnd(cloud_mask).eq(0) and qa.bitwiseAnd(cirrus_mask).eq(0)
-            return  image.updateMask(mask)
+            cloud_bit_mask = 1 << 10
+            cirrus_bit_mask = 1 << 11
+            mask = (qa.bitwiseAnd(cloud_bit_mask).eq(0)
+                    .And(qa.bitwiseAnd(cirrus_bit_mask).eq(0)))
+
+            return image.updateMask(mask)
+
         return collection.map(maskSentinelImage)
 
     """
