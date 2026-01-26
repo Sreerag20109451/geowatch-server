@@ -14,7 +14,7 @@ from utility.earthengineutilities import create_date_range, create_legend
 class SentinelProducts:
 
     def __init__(self):
-
+        self._ee_initialized = False
         self.reflectance_bands = [
     'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9', 'B11', 'B12']
         
@@ -22,9 +22,7 @@ class SentinelProducts:
         
         self._init_ee()
         self.sentinel_msi_collection = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
-        
 
-        pass
 
     """Initialize Earth Engine"""
 
