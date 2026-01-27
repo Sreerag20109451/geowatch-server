@@ -13,7 +13,7 @@ class ModisProducts:
     Get recent modis data with specified bands for a specified time interval (delta, default = 8)
     """
 
-    def get_modis_data(self, delta, threshold=40, qa_mask="default" , snow_class_mask="default", **kwargs ,):
+    def get_modis_data(self, delta, threshold=None, qa_mask="default" , snow_class_mask="default", **kwargs ,):
         default_bands = ['NDSI_Snow_Cover', 'NDSI_Snow_Cover_Basic_QA', 'NDSI_Snow_Cover_Class']
         for band in kwargs.items():
             if (band not in default_bands):
@@ -32,7 +32,7 @@ class ModisProducts:
 
      """
 
-    def get_modis_snow_cover(self, vis_params, delta=10, region=None, is_png=False, threshold = 40, qa_mask="default" , snow_class_mask="default" ):
+    def get_modis_snow_cover(self, vis_params, delta=10, region=None, is_png=False, threshold = None, qa_mask="default" , snow_class_mask="default" ):
         modis_data = self.get_modis_data(delta, threshold, qa_mask, snow_class_mask).select('NDSI_Snow_Cover').median()
 
         match region:
@@ -52,8 +52,8 @@ class ModisProducts:
             case 'antarctic':
                 regiontobeclipped = self.region.lsib_region("Antarctica")
                 modis_data = modis_data.clip(regiontobeclipped)
-        legendObj = create_legend(vis_params, 'Modis - NDSI')
-        return {"image" : modis_data , "legend" : legendObj }
+        legendObj = create_legend(vis_params, 'Modis - NDSI', threshold)
+        return {"image" : modis_data , "legend" : legendObj, "vis_param": legendObj["vis_param"] }
 
     """
     Mask the modis snow cover data 
@@ -67,7 +67,7 @@ class ModisProducts:
     Masked image collection
     """
 
-    def maskSnowCover(self, modis_data, threshold=40,
+    def maskSnowCover(self, modis_data, threshold=None,
                       snow_band='NDSI_Snow_Cover',
                       qa_band='NDSI_Snow_Cover_Basic_QA',
                       class_band='NDSI_Snow_Cover_Class',
@@ -131,8 +131,11 @@ class ModisProducts:
 
 
             # Snow mask
+
+            int_t = float(threshold) if threshold is not None else None
+
             if image.bandNames().contains(snow_band):
-                snow_mask = image.select(snow_band).gt(threshold)
+                snow_mask = image.select(snow_band).gt(0 if threshold is None else ee.Image.constant(int_t))
                 image = image.updateMask(snow_mask)
 
             return image
