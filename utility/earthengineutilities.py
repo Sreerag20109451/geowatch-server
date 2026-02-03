@@ -17,16 +17,23 @@ def create_date_range(delta):
     return [start_date, end_date]
 
 
-def create_legend(vis_params, chartname):
+def create_legend(vis_params, chartname, threshold=None):
     palette = vis_params["palette"]
-    min = vis_params["min"]
+    min = float(threshold) if threshold is not None else vis_params["min"]
     max = vis_params["max"]
     unitrange = (max - min) / len(palette)
     legend = {}
-
     for i, color in enumerate(palette):
         legend[color] = f"{min+(i)*unitrange} - {min + (i+1)*unitrange }"
-    return { 'legend' : legend , 'chartname' : chartname}
+
+    updated_vis = {
+        "min": min,
+        "max": max,
+        "palette": palette
+    }
+
+
+    return { 'legend' : legend , 'chartname' : chartname ,"vis_param" : updated_vis }
 
 
 def create_legacy_tile_url(mapid):

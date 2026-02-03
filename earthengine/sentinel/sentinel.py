@@ -97,7 +97,7 @@ class SentinelProducts:
         return {'collection' : sentinel_collection , 'region_geometry' : regiontobeclipped}
 
 
-    def get_sentinel_snow_cover_composite(self, region, delta=10, sentnel_cloud_mask=True):
+    def get_sentinel_snow_cover_composite(self, region, delta=10, sentnel_cloud_mask=True, threshold=None):
         print(region)
         vis_param = sentinel_ndsi_vis_param
         sentinel_msi_collection_data = self.get_recent_sentinel_msi_data(region, delta)
@@ -107,9 +107,10 @@ class SentinelProducts:
         if sentnel_cloud_mask:
             scaled_collection = self.maskClouds(scaled_collection)
         ndsi_collection = self.ndsi(scaled_collection)
-        legend = create_legend(vis_param , "Sentinel - NDSI")
+        ndsi_collection = self.filterByThreshold(ndsi_collection, threshold)
+        legend = create_legend(vis_param , "Sentinel - NDSI", threshold)
         ndsi_composite =ndsi_collection.select('NDSI').median()
-        return  {"image" : ndsi_composite, "vis_param" : vis_param, "legend" : legend}
+        return  {"image" : ndsi_composite, "vis_param" : legend["vis_param"], "legend" : legend}
 
     
 
@@ -132,6 +133,18 @@ class SentinelProducts:
     Args : Sentinel Collection
     Returns : Masked Sentinel collection
     """
+
+    def filterByThreshold(self,collection, threshold=None):
+        if threshold is None:
+            return collection
+
+        def filterImageByThreshold(image):
+            imagemask = image.gte(ee.Image.constant(float(threshold)))
+            image = image.updateMask(imagemask)
+            return image
+        return collection.map(filterImageByThreshold)
+
+
 
     def maskClouds(self, collection):
         def maskSentinelImage(image):
