@@ -6,6 +6,7 @@ import pathlib
 
 from dotenv import load_dotenv
 
+
 class News(TypedDict):
     
     title : str
@@ -20,8 +21,12 @@ ENV_PATH = BASE_DIR/ "config" / ".env"
 load_dotenv(ENV_PATH)
 
 
+
 apikey= os.getenv("NEWSDATA_API_KEY")
 news_data_query_builder_url = f'https://newsdata.io/api/1/latest?apikey={apikey}&q=climate%20change&language=en&prioritydomain=top&image=1&removeduplicate=1'
+
+
+
 
 def get_newsData():
     data = requests.get(news_data_query_builder_url).json()
