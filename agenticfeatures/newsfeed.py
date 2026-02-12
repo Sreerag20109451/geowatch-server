@@ -1,7 +1,9 @@
 import os
 from dotenv import load_dotenv
 import requests
-class NewsFeed{
+import chromadb
+
+class NewsFeed:
 
     _model_initilized = False
     BASE_DIR = pathlib.Path(__file__).parent.parent.resolve()
@@ -12,16 +14,21 @@ class NewsFeed{
 
         """Check for Environment"""
         if not self.ENV_PATH.exists():
-            raise ValueError "The environment does not exists"
-        """Load environment"""    
-        load_dotenv(self.ENV_PATH)
-        self.gemini_api_key = os.getenv("GEMINI_API_KEY")
-       
-       """Initialize model """
-        self.model = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash", 
-            api_key= self.api_key
-        )
+            raise ValueError("The environment does not exists")
+        else:
+             load_dotenv(self.ENV_PATH)
         
+        """Load environment"""    
+       
+        self.gemini_api_key = os.getenv("GEMINI_API_KEY")
+        self.env = os.getenv("APP_ENV")
+       
+        """Initialize model """
+        self.chromaClient = chromadb.CloudClient(
+                api_key=os.get_env('CHROMA_CLOUD_API_KEY'),
+                tenant=os.get_env('CHROMA_TENANT'),
+                database=os.get_env('CHROMA_DB_NAME')
+            )
+            
 
-}
+
