@@ -10,6 +10,7 @@ from celery import Celery
 from celery.schedules import schedule  
 from redbeat import RedBeatSchedulerEntry
 from api.snow import snowrouter
+from api.newsfeed import newsfeedrouter
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from earthengine.auth import EarthEngineAuth
@@ -88,6 +89,7 @@ app.add_middleware(
 )
 
 app.include_router(snowrouter)
+app.include_router(newsfeedrouter)
 
 
 
