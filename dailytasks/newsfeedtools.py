@@ -17,10 +17,15 @@ class News(TypedDict):
 
 
 BASE_DIR = pathlib.Path(__file__).parent.parent.resolve()
-ENV_PATH = BASE_DIR/ "config" / ".env"
-load_dotenv(ENV_PATH)
+ENV_PATH = BASE_DIR / "config" / ".env"
 
-print(ENV_PATH)
+if ENV_PATH.exists():
+    load_dotenv(ENV_PATH)
+else:
+    load_dotenv() 
+
+# Now os.getenv will work whether the key comes from a file or Railway's UI.
+apikey = os.getenv("NEWSDATA_API_KEY")
 
 
 apikey= os.getenv("NEWSDATA_API_KEY")
