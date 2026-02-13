@@ -3,3 +3,8 @@ starlette~=0.50.0
 earthengine-api~=1.7.4
 python-dotenv~=1.2.1
 uvicorn[standard]==0.23.2
+# Add these for your background tasks and scheduling:
+redis~=5.0.1
+celery~=5.4.0
+celery-redbeat~=2.2.0
+upstash-redis~=1.0.0
