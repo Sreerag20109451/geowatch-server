@@ -1,10 +1,16 @@
 import json
 import os
+import redis
 import pathlib
 from dotenv import load_dotenv
 import ee
+import sys
 
+from celery import Celery
+from celery.schedules import schedule  
+from redbeat import RedBeatSchedulerEntry
 from api.snow import snowrouter
+from api.newsfeed import newsfeedrouter
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from earthengine.auth import EarthEngineAuth
@@ -19,7 +25,7 @@ RAILWAY_MOUNT = "/services/key.json"
 
 if ENV_PATH.exists():
     load_dotenv(dotenv_path=ENV_PATH)
-    print(f"Loaded environment from {ENV_PATH}")
+    print(f"Loaded environment from ")
 else:
     print("file found; relying on system environment variables")
 
@@ -27,13 +33,17 @@ else:
 service_accnt = os.getenv("SERVICE_ACCOUNT")
 key_file_path = None
 
+
+
+
+
 if LOCAL_KEY.exists():
     key_file_path = str(LOCAL_KEY)
-    print(f"Found local key.json at {key_file_path}")
+    print(f"Found local key.json at")
 
 elif os.path.exists(RAILWAY_MOUNT):
     key_file_path = RAILWAY_MOUNT
-    print(f"Using Railway Volume at {key_file_path}")
+    print(f"Using Railway Volume at ")
 
 else:
     key_json_str = os.environ.get("KEY_JSON")
@@ -49,6 +59,26 @@ else:
 earthengineAuth = EarthEngineAuth()
 earthengineAuth.initialize_earth_engine(service_accnt, key_file_path)
 
+
+# Initialize celery
+
+celery_app =  Celery('task-scheduler', broker=os.getenv("REDIS_URL"))
+reddis_instance = redis.from_url(os.getenv("REDIS_URL"))
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+@celery_app.task
+def get_daily_news_feed():
+    from dailytasks.newsfeedtools import get_newsData
+    daily_newsdata = get_newsData()
+    
+    reddis_instance.set("daily_news_feed", json.dumps(daily_newsdata))
+    return "News feed updated in Redis"
+
+
+interval = schedule(run_every=86400)  
+daily_news_task_path = f"{get_daily_news_feed.__module__}.{get_daily_news_feed.__name__}"
+entry = RedBeatSchedulerEntry('get_daily_news_data', daily_news_task_path , interval, args=[], app=celery_app)
+entry.save()
+
 # Middlewares 
 app.add_middleware(
     CORSMiddleware,
@@ -59,6 +89,15 @@ app.add_middleware(
 )
 
 app.include_router(snowrouter)
+app.include_router(newsfeedrouter)
+
+
+
+@celery_app.task
+def get_news_data():
+    from agenticfeatures.newsfeed import get_newsData
+    news_data = get_news_data()
+    return news_data
 
 @app.get("/")
 def read_key_info():
@@ -72,3 +111,4 @@ def test_ee():
         return {"mapid": mapid}
     except Exception as e:
         return {"error": str(e)}
+

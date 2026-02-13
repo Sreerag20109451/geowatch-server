@@ -14,8 +14,6 @@ class EarthEngineAuth:
     """
 
     def initialize_earth_engine(self,service_account, path_to_key):
-        print(service_account)
-        print(path_to_key)
         credentials = ee.ServiceAccountCredentials(str(service_account), str(path_to_key))
         ee.Initialize(credentials)
         return
