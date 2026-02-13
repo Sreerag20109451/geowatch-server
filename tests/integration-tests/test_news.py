@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 from dailytasks.newsfeedtools import get_newsData
 from agenticfeatures.newsfeed import NewsFeed
+from agenticfeatures.llmtasks import LLMTasks
 
 
 
@@ -41,6 +42,11 @@ class NewsFeedTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(newsfeed)
         self.assertGreater(len(newsfeed), 0)
         self.assertGreater(len(newsfeed), 1)
+
+    """Verify if summary tupes working fine"""
+    async def test_summary_tuple_creation(self):
+        print("----- Initializing summary tuple creation ------")
+        llmtasks = LLMTasks
 
 
 if __name__ == "__main__":
