@@ -14,8 +14,10 @@ from api.newsfeed import newsfeedrouter
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from earthengine.auth import EarthEngineAuth
-from dailytasks.newsfeedtools import get_newsData
-from celery.schedules import crontab
+from agenticfeatures.newsfeed import NewsFeed
+
+
+newsfeedtasks = NewsFeed()
 
 app = FastAPI(redirect_slashes=False)
 
@@ -67,18 +69,17 @@ earthengineAuth.initialize_earth_engine(service_accnt, key_file_path)
 celery_app =  Celery('task-scheduler', broker=os.getenv("REDIS_URL"))
 reddis_instance = redis.from_url(os.getenv("REDIS_URL"))
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+@celery_app.task
+def get_daily_news_feed():
+    from dailytasks.newsfeedtools import get_newsData
+    daily_newsdata = get_newsData()
+    reddis_instance.set("daily_news_feed", json.dumps(daily_newsdata))
+    return "News feed updated in Redis"
 
-@celery_app.on_after_finalize.connect
-def setup_periodic_tasks(sender, **kwargs):
-    # This ensures the task is registered only when Celery starts
-    entry = RedBeatSchedulerEntry(
-        'get_newsData', 
-        'get_newsData', # Exact import path to the function
-        crontab(hour=0, minute=0),  # Runs every day at midnight
-        app=celery_app
-    )
-    entry.save()
-
+interval = schedule(run_every=6000)  
+daily_news_task_path = f"{get_daily_news_feed.__module__}.{get_daily_news_feed.__name__}"
+entry = RedBeatSchedulerEntry('get_daily_news_data', daily_news_task_path , interval, args=[], app=celery_app)
+entry.save()
 
 # Middlewares 
 app.add_middleware(
