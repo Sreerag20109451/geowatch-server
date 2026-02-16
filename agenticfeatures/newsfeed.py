@@ -4,6 +4,7 @@ import pathlib
 from dotenv import load_dotenv
 from upstash_redis.asyncio import Redis
 
+
 # Load environment variables once at the module level
 # This looks for .env in /config, but won't break if it's missing (like in prod)
 BASE_DIR = pathlib.Path(__file__).parent.parent
@@ -19,6 +20,7 @@ class NewsFeed:
         # Simply pull from the environment
         self.redis_url = os.getenv("UPSTASH_REDIS_REST_URL")
         self.token = os.getenv("UPSTASH_REDIS_REST_TOKEN")
+        self.gemini_api_key = os.getenv("AIzaSyBebN0FFLJ-WC7fvIVd_QZoYqBPxjf5FaQ")
     
     async def get_daily_news_from_redis(self):
         if not self.redis_url or not self.token:
@@ -31,10 +33,8 @@ class NewsFeed:
         
         if newsdata is None:
             return []
-            
-        # Upstash-redis usually returns a dict if it was stored as JSON, 
-        # but if it's a string, we load it.
-        if isinstance(newsdata, str):
             return json.loads(newsdata)
         
         return newsdata
+    
+     

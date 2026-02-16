@@ -8,3 +8,4 @@ redis~=5.0.1
 celery~=5.4.0
 celery-redbeat~=2.2.0
 upstash-redis~=1.0.0
+langchain~=1.2.10
