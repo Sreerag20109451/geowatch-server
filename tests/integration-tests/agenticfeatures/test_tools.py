@@ -7,17 +7,15 @@ from dotenv import load_dotenv
 from dailytasks.newsfeedtools import get_newsData
 from dailytasks.newsfeed import NewsFeed
 from agenticfeatures.climatecolumns.models import LLMTasks
-
+from agenticfeatures.climatecolumns.tools import searchforpapers
 
 
 class NewsFeedTests(unittest.IsolatedAsyncioTestCase):
 
-
-    
     def setup(self):
         self.envpath = pathlib.Path(__file__).parent.parent.parent.resolve() / "config" / ".env"
         load_dotenv(dotenv_path=self.envpath)
-        self.apikey = os.getenv("NEWSDATA_API_KEY")
+        self.apikey = os.getenv("GEMINI_API_KEY")
 
         """
     Verify if the newsdata io responds with news objects
@@ -31,24 +29,17 @@ class NewsFeedTests(unittest.IsolatedAsyncioTestCase):
         self.assertGreater(len(newses), 2)
 
         """
-    Verify redis responds with news objects
+    Verify if semantic scholar returns documents
     """
 
-    async def test_news_retrival_from_redis(self):
-        print("--- Initalising news retrieval from redis--------")
-        newsfeeder = NewsFeed()
-        newsfeed = await newsfeeder.get_daily_news_from_redis()
-        print(len(newsfeed))
-        self.assertIsNotNone(newsfeed)
-        self.assertGreater(len(newsfeed), 0)
-        self.assertGreater(len(newsfeed), 1)
+    async def test_semantic_scholar_test(self):
+        response = searchforpapers()
+        self.assertTrue(response)
+        self.assertEqual(len(response), 10)
 
-    """Verify if summary tupes working fine"""
-    async def test_summary_tuple_creation(self):
-        print("----- Initializing summary tuple creation ------")
-        llmtasks = LLMTasks
+
+
 
 
 if __name__ == "__main__":
     unittest.main()
-    

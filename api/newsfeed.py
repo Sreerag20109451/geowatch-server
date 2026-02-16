@@ -2,7 +2,7 @@ import fastapi
 
 from starlette.responses import JSONResponse
 
-from agenticfeatures.newsfeed import NewsFeed 
+from dailytasks.newsfeed import NewsFeed
 
 
 newsfeedrouter = fastapi.APIRouter()

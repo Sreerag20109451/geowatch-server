@@ -14,7 +14,7 @@ from api.newsfeed import newsfeedrouter
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from earthengine.auth import EarthEngineAuth
-from agenticfeatures.newsfeed import NewsFeed
+from dailytasks.newsfeed import NewsFeed
 
 
 newsfeedtasks = NewsFeed()
@@ -97,7 +97,7 @@ app.include_router(newsfeedrouter)
 
 @celery_app.task
 def get_news_data():
-    from agenticfeatures.newsfeed import get_newsData
+    from dailytasks.newsfeed import get_newsData
     news_data = get_news_data()
     return news_data
 
