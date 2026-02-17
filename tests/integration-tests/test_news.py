@@ -25,7 +25,6 @@ class NewsFeedTests(unittest.IsolatedAsyncioTestCase):
     def test_getnews(self):
         print("---Fetching news data -------")
         newses = get_newsData()
-        print(f"newses f{newses}")
         print(len(newses))
         self.assertGreater(len(newses), 2)
 

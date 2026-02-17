@@ -30,7 +30,6 @@ class NewsFeedTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_semantic_scholar_test(self):
         response = searchforpapers.invoke({})
-        print(response[0])
         self.assertEqual(len(response), 10)
 
 
