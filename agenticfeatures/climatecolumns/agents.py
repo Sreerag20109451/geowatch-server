@@ -13,7 +13,6 @@ from langgraph.graph import StateGraph, START, END
 from agenticfeatures.climatecolumns.tools import searchforpapers, ResearchDocument
 
 
-
 BASE_DIR = pathlib.Path(__file__).parent.parent
 LOCAL_ENV = BASE_DIR / 'config' / '.env'
 
@@ -81,20 +80,20 @@ def generate_articles(api_key : str = os.getenv('GEMINI_API_KEY')):
             Abstract: {doc['abstract']}
             """
 
-            prompt = f"""
-                        Group the following research documents into distinct focus areas.
+        prompt = f"""
+                                Group the following research documents into distinct focus areas.
 
-                        {formatted_docs}
+                                {formatted_docs}
 
-                        Rules:
-                        - Each focus area must be unique.
-                        - If multiple documents belong to the same theme, group them.
-                        - Output ONLY structured JSON.
-                        - Do not add newses. Leave newses as empty list.
-                        """
+                                Rules:
+                                - Each focus area must be unique.
+                                - If multiple documents belong to the same theme, group them.
+                                - Output ONLY structured JSON.
+                                - Do not add newses. Leave newses as empty list.
+                                """
         agent = create_agent(model=model, system_prompt = "Your job is to find focus areas from the list of documents and group them together in a list",
 
-    response_format=FocusAreaList)
+                    response_format=FocusAreaList)
 
         response = agent.invoke({"messages": [{"role" : "user", "content" : prompt}]})
         structured_response = response["structured_response"]
@@ -107,6 +106,13 @@ def generate_articles(api_key : str = os.getenv('GEMINI_API_KEY')):
     graphBuilder.add_edge("focus_area_finder", END)
     graph = graphBuilder.compile()
     state = graph.invoke({})
+
+
+    def search_for_focusAreas(state: State):
+        focus_areas = state["focus_area"]
+
+        supervisor_agent = create_agent(model, system_prompt="You are a helpful AI assitant, tasked with supervising web search for different focus areas")
+
     return state
 
 

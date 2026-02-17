@@ -4,9 +4,28 @@ import  json
 import requests
 import xmltodict
 import arxiv
+import pathlib
+import  os
+
+from dotenv import load_dotenv
+
+from tavily import TavilyClient
+BASE_DIR = pathlib.Path(__file__).parent.parent.parent.resolve()
+LOCAL_ENV = BASE_DIR / 'config' / '.env'
+
+if LOCAL_ENV.exists():
+    load_dotenv(dotenv_path=LOCAL_ENV)
+else:
+    load_dotenv()
+
+tavily_api_key = os.getenv('TAVILY_API')
+
+
+tavily_client = TavilyClient(api_key=tavily_api_key)
+
+
 
 semantic_search_url = "https://api.semanticscholar.org/graph/v1/paper/search?query=climate+change&fields=title,abstract,openAccessPdf,authors,publicationDate,citationCount&limit=10&sort=citationCount:desc&publicationDateOrYear=2026-01"
-
 
 class ResearchDocument(TypedDict):
     title: str
@@ -15,6 +34,10 @@ class ResearchDocument(TypedDict):
     authors: List[str]
     link : str
 
+
+class WebData(TypedDict):
+    url: str
+    content: str
 
 @tool(description="searches research papers for articles")
 def searchforpapers() -> List[ResearchDocument]:
@@ -46,4 +69,11 @@ def searchforpapers() -> List[ResearchDocument]:
 
     return researchdocs
 
-
+@tool(description="Web search for newses related to each query")
+def search_web(query : str):
+    webdatas = []
+    response = tavily_client.search(query=query, search_depth="advanced", max_results=10)
+    for result in response['results']:
+        webdata = WebData(url=result['url'], content=result['content'])
+        webdatas.append(webdata)
+    return webdatas

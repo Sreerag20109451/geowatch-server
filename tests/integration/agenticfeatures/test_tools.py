@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 
 from dailytasks.newsfeedtools import get_newsData
-from agenticfeatures.climatecolumns.tools import searchforpapers
+from agenticfeatures.climatecolumns.tools import searchforpapers, search_web
 
 
 class NewsFeedTests(unittest.IsolatedAsyncioTestCase):
@@ -28,9 +28,13 @@ class NewsFeedTests(unittest.IsolatedAsyncioTestCase):
     Verify if semantic scholar returns documents
     """
 
-    async def test_semantic_scholar_test(self):
+    def test_semantic_scholar_test(self):
         response = searchforpapers.invoke({})
         self.assertEqual(len(response), 10)
+    def test_search_web(self):
+        response = search_web.invoke({"query" : "climate change"})
+        self.assertEqual(len(response), 10)
+
 
 
 
