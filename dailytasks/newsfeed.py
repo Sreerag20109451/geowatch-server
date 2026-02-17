@@ -35,19 +35,5 @@ class NewsFeed:
             return []
         return json.loads(newsdata)
         
-            
-        
-        return newsdata
-    
-    def delete_previous_news_from_redis(self):
-           if not self.redis_url or not self.token:
-            print("Missing Upstash credentials!")
-            return []
 
-           redis = Redis(url=self.redis_url, token=self.token)
-           if(redis.exists("daily_news_feed")):
-              redis.delete("daily_news_feed")
-           else:
-               pass
-    
      

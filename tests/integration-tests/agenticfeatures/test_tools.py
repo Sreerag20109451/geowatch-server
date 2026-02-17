@@ -5,8 +5,6 @@ import os
 from dotenv import load_dotenv
 
 from dailytasks.newsfeedtools import get_newsData
-from dailytasks.newsfeed import NewsFeed
-from agenticfeatures.climatecolumns.models import LLMTasks
 from agenticfeatures.climatecolumns.tools import searchforpapers
 
 
@@ -24,8 +22,6 @@ class NewsFeedTests(unittest.IsolatedAsyncioTestCase):
     def test_getnews(self):
         print("---Fetching news data -------")
         newses = get_newsData()
-        print(f"newses f{newses}")
-        print(len(newses))
         self.assertGreater(len(newses), 2)
 
         """
@@ -33,8 +29,8 @@ class NewsFeedTests(unittest.IsolatedAsyncioTestCase):
     """
 
     async def test_semantic_scholar_test(self):
-        response = searchforpapers()
-        self.assertTrue(response)
+        response = searchforpapers.invoke({})
+        print(response[0])
         self.assertEqual(len(response), 10)
 
 
