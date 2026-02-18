@@ -10,8 +10,10 @@ from typing_extensions import TypedDict, Annotated
 import operator
 from langchain.agents import create_agent
 from langgraph.graph import StateGraph, START, END
-from agenticfeatures.climatecolumns.tools import searchforpapers, ResearchDocument
+from langgraph.types import Send
 
+from agenticfeatures.climatecolumns.generics import generate_newses_for_focus_area
+from agenticfeatures.climatecolumns.tools import searchforpapers, ResearchDocument, search_web, extract_pages
 
 BASE_DIR = pathlib.Path(__file__).parent.parent
 LOCAL_ENV = BASE_DIR / 'config' / '.env'
@@ -20,7 +22,6 @@ if LOCAL_ENV.exists():
     load_dotenv(dotenv_path=LOCAL_ENV)
 else:
     load_dotenv()
-
 gemini_api_key = os.getenv('GEMINI_API_KEY')
 
 gemini_model = model = ChatGoogleGenerativeAI(
@@ -46,6 +47,8 @@ tools_by_name = {tool.name: tool for tool in tools}
 class FocusAreaList(TypedDict):
     focus_areas: list[FocusArea]
 
+class NewsList(TypedDict):
+    newses : list[str]
 class State(TypedDict):
     documents: Annotated[list[ResearchDocument], operator.add]
     focus_area : Annotated[list[FocusArea], operator.add]
@@ -103,15 +106,38 @@ def generate_articles(api_key : str = os.getenv('GEMINI_API_KEY')):
         }
     graphBuilder.add_node("focus_area_finder", focus_area_finder)
     graphBuilder.add_edge("paper_fetcher", "focus_area_finder")
-    graphBuilder.add_edge("focus_area_finder", END)
+
+
+    def pan_focus_area(state: State):
+        return [Send("writing_assistant_focus_area", {"focus_area" :fa} ) for fa in state["focus_area"]]
+
+
+    graphBuilder.add_conditional_edges("focus_area_finder", pan_focus_area)
+
+
+    def writing_assistant_focus_area(area: FocusArea):
+        writing_assistant_agent = create_agent(model=model,
+                                               tools=[search_web, extract_pages],
+                                               system_prompt = """
+                                               You are a helpful AI assistant, you help the write to 
+                                               write articles on a focus area, based on the documents and web searches.
+                                               You are given a focus area""",
+                                               response_format=NewsList
+                                               )
+
+
+
+        response = generate_newses_for_focus_area(area)
+        area["focus_area"]["newses"] = response
+        return  {
+            "focus_area":[area["focus_area"]] ,
+        }
+
+    graphBuilder.add_node("writing_assistant_focus_area", writing_assistant_focus_area)
+    graphBuilder.add_edge("writing_assistant_focus_area", END)
     graph = graphBuilder.compile()
     state = graph.invoke({})
 
-
-    def search_for_focusAreas(state: State):
-        focus_areas = state["focus_area"]
-
-        supervisor_agent = create_agent(model, system_prompt="You are a helpful AI assitant, tasked with supervising web search for different focus areas")
 
     return state
 

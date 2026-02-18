@@ -24,7 +24,6 @@ tavily_api_key = os.getenv('TAVILY_API')
 tavily_client = TavilyClient(api_key=tavily_api_key)
 
 
-
 semantic_search_url = "https://api.semanticscholar.org/graph/v1/paper/search?query=climate+change&fields=title,abstract,openAccessPdf,authors,publicationDate,citationCount&limit=10&sort=citationCount:desc&publicationDateOrYear=2026-01"
 
 class ResearchDocument(TypedDict):
@@ -70,10 +69,31 @@ def searchforpapers() -> List[ResearchDocument]:
     return researchdocs
 
 @tool(description="Web search for newses related to each query")
-def search_web(query : str):
+def search_web(query : str) -> List[WebData]:
     webdatas = []
     response = tavily_client.search(query=query, search_depth="advanced", max_results=10)
     for result in response['results']:
         webdata = WebData(url=result['url'], content=result['content'])
         webdatas.append(webdata)
     return webdatas
+
+@tool(description="Extract the webpages related to each query")
+def extract_pages(urllist: List[str]) -> List[str]:
+        extracted_content = []
+        try:
+            response = tavily_client.extract(
+    urls=urllist,
+    chunks_per_source=5,
+    extract_depth="advanced",
+    format="text",
+    include_images=True
+)
+            for result in response['results']:
+                extracted_content.append(result['raw_content'])
+            return extracted_content
+
+        except Exception as e:
+            print(e.message)
+            raise Exception(e.message)
+
+

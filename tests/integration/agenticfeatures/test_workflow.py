@@ -13,7 +13,7 @@ class TestClimateColumnWorkflow(unittest.TestCase):
     def test_workflow(self):
         print("------------------------Testing workflow---")
         state = generate_articles()
-        print(f"The run is {state}")
+        print(state)
         self.assertIsInstance(state["documents"], list)
         print("-------------------- Ended testing workflow------------------")
 
