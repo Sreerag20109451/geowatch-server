@@ -11,24 +11,17 @@ import operator
 from langchain.agents import create_agent
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import Send
-
-from agenticfeatures.climatecolumns.generics import generate_newses_for_focus_area
+from upstash_redis.asyncio import Redis
+from agenticfeatures.climatecolumns.generics import generate_newses_for_focus_area, store_to_redis
+from agenticfeatures.climatecolumns.model import model
 from agenticfeatures.climatecolumns.tools import searchforpapers, ResearchDocument, search_web, extract_pages
 
-BASE_DIR = pathlib.Path(__file__).parent.parent
-LOCAL_ENV = BASE_DIR / 'config' / '.env'
+class Article(TypedDict):
+    title: str
+    content: str
 
-if LOCAL_ENV.exists():
-    load_dotenv(dotenv_path=LOCAL_ENV)
-else:
-    load_dotenv()
-gemini_api_key = os.getenv('GEMINI_API_KEY')
-
-gemini_model = model = ChatGoogleGenerativeAI(
-    model="gemini-3-pro-preview",
-    api_key=gemini_api_key,
-    temperature=1
-)
+class ArticleList(TypedDict):
+    articles: list[Article]
 
 class NewsDict(TypedDict):
     title: str
@@ -53,6 +46,7 @@ class State(TypedDict):
     documents: Annotated[list[ResearchDocument], operator.add]
     focus_area : Annotated[list[FocusArea], operator.add]
     messages: Annotated[list[AnyMessage], operator.add]
+    articles : ArticleList
     status: str
 
 """
@@ -134,11 +128,81 @@ def generate_articles(api_key : str = os.getenv('GEMINI_API_KEY')):
         }
 
     graphBuilder.add_node("writing_assistant_focus_area", writing_assistant_focus_area)
-    graphBuilder.add_edge("writing_assistant_focus_area", END)
+
+    def aggregate_focus_area(state: State):
+        return {"status": "aggregated_focus_area"}
+    graphBuilder.add_node("aggregate_focus_area", aggregate_focus_area)
+
+    graphBuilder.add_edge("writing_assistant_focus_area","aggregate_focus_area")
+
+    def write_articles(state: State):
+
+        writing_agent = create_agent(
+            model=model,
+            system_prompt="""
+            You are a professional science journalist.
+
+            Write high-quality articles using ONLY:
+            - Research documents in state
+            - News data in focus areas
+
+            Do NOT hallucinate information.
+
+            Output structured JSON in this format:
+
+            {
+              "articles": [
+                {
+                  "title": "...",
+                  "content": "..."
+                }
+              ]
+            }
+            """,
+            response_format=ArticleList
+        )
+
+        all_articles = []
+
+        for area in state["focus_area"]:
+            related_docs = [
+                doc for doc in state["documents"]
+                if doc["title"] in area["documents"]
+            ]
+
+            prompt = f"""
+            Focus Area: {area['area']}
+
+            Documents:
+            {related_docs}
+
+            News:
+            {area.get('newses', [])}
+
+            Write 3 detailed articles (minimum 400 words each).
+            If data is not sufficient, 
+            """
+
+            response = writing_agent.invoke({
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ]
+            })
+
+            articles = response["structured_response"]["articles"]
+            all_articles.extend(articles)
+
+        return {
+            "status": "articles_generated",
+            "articles": all_articles
+        }
+    graphBuilder.add_node("write_articles", write_articles)
+    graphBuilder.add_edge("aggregate_focus_area","write_articles")
+    graphBuilder.add_edge("write_articles", END)
+
     graph = graphBuilder.compile()
     state = graph.invoke({})
-
-
+    store_to_redis(state["articles"])
     return state
 
 
