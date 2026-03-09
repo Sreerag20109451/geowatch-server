@@ -82,14 +82,6 @@ app.add_middleware(
 app.include_router(snowrouter)
 app.include_router(newsfeedrouter)
 
-
-
-@celery_app.task
-def get_news_data():
-    from dailytasks.newsfeed import get_newsData
-    news_data = get_news_data()
-    return news_data
-
 @app.get("/")
 def read_key_info():
     return {"status": "authenticated", "key_source": key_file_path}

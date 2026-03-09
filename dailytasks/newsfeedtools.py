@@ -2,6 +2,7 @@ import requests
 import os
 from typing import TypedDict
 import pathlib
+import datetime
 
 
 from dotenv import load_dotenv
@@ -38,7 +39,6 @@ news_data_query_builder_url = f'https://newsdata.io/api/1/latest?apikey={apikey}
 def get_newsData():
     try:
         data = requests.get(news_data_query_builder_url).json()
-
         relevant_news = []
         for n in data.get("results", []):
         
@@ -50,10 +50,9 @@ def get_newsData():
             "source": n.get("source_id", "Unknown")
             }
             relevant_news.append(news)
-            create_dtm = datetime.datetime.now()
-            return { "news": relevant_news , "create_dtm": create_dtm }
-
-        return relevant_news
+        create_dtm = datetime.datetime.now().isoformat()
+        print(f"nesw{relevant_news}")
+        return {"news": relevant_news, "create_dtm": create_dtm}
     except Exception as e:
 
         print(e.__traceback__)

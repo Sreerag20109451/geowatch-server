@@ -25,8 +25,8 @@ class NewsFeedTests(unittest.IsolatedAsyncioTestCase):
     def test_getnews(self):
         print("---Fetching news data -------")
         newses = get_newsData()
-        print(len(newses))
-        self.assertGreater(len(newses), 2)
+        print(newses)
+        self.assertGreater(len(newses["news"]), 2)
 
         """
     Verify redis responds with news objects
