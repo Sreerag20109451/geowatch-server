@@ -15,7 +15,7 @@ gemini_api_key = os.getenv('GEMINI_API_KEY')
 
 
 model = ChatGoogleGenerativeAI(
-    model="gemini-3-pro-preview",
+    model="gemini-3-flash-preview",
     api_key=gemini_api_key,
     temperature=1
 )

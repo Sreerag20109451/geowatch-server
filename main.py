@@ -66,20 +66,9 @@ earthengineAuth.initialize_earth_engine(service_accnt, key_file_path)
 
 # Initialize celery
 
-celery_app =  Celery('task-scheduler', broker=os.getenv("REDIS_URL"))
 reddis_instance = redis.from_url(os.getenv("REDIS_URL"))
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
-@celery_app.task
-def get_daily_news_feed():
-    from dailytasks.newsfeedtools import get_newsData
-    daily_newsdata = get_newsData()
-    reddis_instance.set("daily_news_feed", json.dumps(daily_newsdata))
-    return "News feed updated in Redis"
 
-interval = schedule(run_every=6000)  
-daily_news_task_path = f"{get_daily_news_feed.__module__}.{get_daily_news_feed.__name__}"
-entry = RedBeatSchedulerEntry('get_daily_news_data', daily_news_task_path , interval, args=[], app=celery_app)
-entry.save()
 
 # Middlewares 
 app.add_middleware(

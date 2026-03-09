@@ -81,7 +81,7 @@ Do NOT return tool outputs.
 
     return response["structured_response"]["newses"]
 
-def store_to_redis():
+def store_to_redis(articles):
     redis_url = os.getenv('UPSTASH_REDIS_REST_URL')
     redis_token = os.getenv('UPSTASH_REDIS_REST_TOKEN')
     redis = Redis(url=redis_url, token=redis_token)

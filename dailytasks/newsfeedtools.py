@@ -50,6 +50,8 @@ def get_newsData():
             "source": n.get("source_id", "Unknown")
             }
             relevant_news.append(news)
+            create_dtm = datetime.datetime.now()
+            return { "news": relevant_news , "create_dtm": create_dtm }
 
         return relevant_news
     except Exception as e:
