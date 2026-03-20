@@ -2,6 +2,7 @@ import requests
 import os
 from typing import TypedDict
 import pathlib
+import datetime
 
 
 from dotenv import load_dotenv
@@ -28,34 +29,35 @@ else:
 apikey = os.getenv("NEWSDATA_API_KEY")
 
 
-apikey= os.getenv("NEWSDATA_API_KEY")
-
-news_data_query_builder_url = f'https://newsdata.io/api/1/latest?apikey={apikey}&q=climate%20change&language=en&prioritydomain=top&image=1&removeduplicate=1&size=10'
-
-
-
-
 def get_newsData():
-    try:
-        data = requests.get(news_data_query_builder_url).json()
+    apikey = os.getenv("NEWSDATA_API_KEY")
+    if not apikey:
+        raise ValueError("NEWSDATA_API_KEY not found in environment variables")
 
+    news_data_query_builder_url = f'https://newsdata.io/api/1/latest?apikey={apikey}&q=climate%20change&language=en&prioritydomain=top&image=1&removeduplicate=1&size=10'
+
+    try:
+        response = requests.get(news_data_query_builder_url)
+        response.raise_for_status()
+        data = response.json()
+        
         relevant_news = []
         for n in data.get("results", []):
-        
             news: News = {
-            "title": n.get("title", "No Title"),
-            "image": n.get("image_url", ""),
-            "content": n.get("description", "No Content"),
-            "href": n.get("link", ""), # Fixed typo: 'llink' -> 'link'
-            "source": n.get("source_id", "Unknown")
+                "title": n.get("title", "No Title"),
+                "image": n.get("image_url", ""),
+                "content": n.get("description", "No Content"),
+                "href": n.get("link", ""),
+                "source": n.get("source_id", "Unknown")
             }
             relevant_news.append(news)
-
-        return relevant_news
+        
+        create_dtm = datetime.datetime.now().isoformat()
+        print(f"Fetched {len(relevant_news)} news items")
+        return {"news": relevant_news, "create_dtm": create_dtm}
     except Exception as e:
-
-        print(e.__traceback__)
-        return Exception("Error loading news data")
+        print(f"Error fetching news data: {e}")
+        raise
     
 
 

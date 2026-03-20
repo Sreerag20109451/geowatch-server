@@ -11,7 +11,7 @@ class EarthEngineAuthTests(unittest.TestCase):
         self.eeAuth = EarthEngineAuth()
         
         # 1. Define Paths relative to this file
-        # tests/integration-tests/test_eeauth.py -> parents[2] is project root
+        # tests/integration/test_eeauth.py -> parents[2] is project root
         self.BASE_DIR = pathlib.Path(__file__).parent.parent.parent.resolve()
         self.ENV_PATH = self.BASE_DIR / "config" / ".env"
         self.LOCAL_KEY = self.BASE_DIR / "key.json"

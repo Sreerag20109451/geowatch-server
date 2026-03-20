@@ -1,0 +1,225 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\Sreerag Sathian\PycharmProjects\geowatch-server
+plugins: anyio-4.12.1, langsmith-0.7.3, asyncio-1.3.0, cov-7.0.0, mock-3.15.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 21 items
+
+tests\test_api_newsfeed.py ..                                            [  9%]
+tests\test_api_snow.py .....                                             [ 33%]
+tests\test_dailytasks.py ...FF..                                         [ 66%]
+tests\test_earthengine.py .FF.                                           [ 85%]
+tests\test_main.py ...                                                   [100%]
+
+================================== FAILURES ===================================
+______________________ test_get_daily_news_cache_expired ______________________
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x000002566A51FD50>
+newsfeed = <dailytasks.newsfeed.NewsFeed object at 0x000002566A668290>
+
+    @pytest.mark.asyncio
+    async def test_get_daily_news_cache_expired(mocker, newsfeed):
+        """Test cache invalidation - mock older than 1 day."""
+        mock_redis = mocker.patch("dailytasks.newsfeed.Redis")
+        mock_redis_instance = mocker.AsyncMock()
+    
+        # Simulate old cache
+        old_time = (datetime.datetime.now() - datetime.timedelta(days=2)).isoformat()
+        cached_data = json.dumps({"news": [], "create_dtm": old_time})
+        mock_redis_instance.get.return_value = cached_data
+        mock_redis.return_value = mock_redis_instance
+    
+        mock_get_newsData = mocker.patch("dailytasks.newsfeed.get_newsData")
+        mock_get_newsData.return_value = {"news": [{"new": "data"}], "create_dtm": datetime.datetime.now().isoformat()}
+    
+        mock_save = mocker.patch.object(newsfeed, "save_to_redis")
+    
+>       result = await newsfeed.get_daily_news_from_redis()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_dailytasks.py:74: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <dailytasks.newsfeed.NewsFeed object at 0x000002566A668290>
+
+    async def get_daily_news_from_redis(self):
+        # ... (credentials check) ...
+    
+        redis = Redis(url=self.redis_url, token=self.token)
+        raw_data = await redis.get('daily_news_feed')
+    
+        # 1. Guard against None (Cache Miss)
+        if raw_data is None:
+            print("Cache miss: fetching fresh data")
+            newsdata = await get_newsData()
+            await self.save_to_redis(newsdata)
+            return newsdata
+    
+        # 2. IMPORTANT: Parse the string from Redis into a Python Dictionary
+        data = json.loads(raw_data)
+    
+        # 3. Now you can safely access the string key "create_dtm"
+        last_created = datetime.datetime.fromisoformat(data["create_dtm"])
+    
+        if last_created < (datetime.datetime.now() - datetime.timedelta(days=1)):
+            print("Cache expired: fetching fresh data")
+>           data = await get_newsData()
+                   ^^^^^^^^^^^^^^^^^^^^
+E           TypeError: object dict can't be used in 'await' expression
+
+dailytasks\newsfeed.py:54: TypeError
+---------------------------- Captured stdout call -----------------------------
+Cache expired: fetching fresh data
+_______________________ test_get_daily_news_cache_miss ________________________
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x000002566A5DE030>
+newsfeed = <dailytasks.newsfeed.NewsFeed object at 0x000002566A5CA250>
+
+    @pytest.mark.asyncio
+    async def test_get_daily_news_cache_miss(mocker, newsfeed):
+        """Test behavior when cache is completely missing."""
+        mock_redis = mocker.patch("dailytasks.newsfeed.Redis")
+        mock_redis_instance = mocker.AsyncMock()
+        mock_redis_instance.get.return_value = None
+        mock_redis.return_value = mock_redis_instance
+    
+        mock_get_newsData = mocker.patch("dailytasks.newsfeed.get_newsData")
+        mock_get_newsData.return_value = {"news": [{"fresh": "data"}], "create_dtm": "timestamp"}
+    
+        mock_save = mocker.patch.object(newsfeed, "save_to_redis")
+    
+>       result = await newsfeed.get_daily_news_from_redis()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_dailytasks.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <dailytasks.newsfeed.NewsFeed object at 0x000002566A5CA250>
+
+    async def get_daily_news_from_redis(self):
+        # ... (credentials check) ...
+    
+        redis = Redis(url=self.redis_url, token=self.token)
+        raw_data = await redis.get('daily_news_feed')
+    
+        # 1. Guard against None (Cache Miss)
+        if raw_data is None:
+            print("Cache miss: fetching fresh data")
+>           newsdata = await get_newsData()
+                       ^^^^^^^^^^^^^^^^^^^^
+E           TypeError: object dict can't be used in 'await' expression
+
+dailytasks\newsfeed.py:42: TypeError
+---------------------------- Captured stdout call -----------------------------
+Cache miss: fetching fresh data
+____________________________ test_earthengine_maps ____________________________
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x000002566A6C1BF0>
+
+    def test_earthengine_maps(mocker):
+        """Test EarthEngineMaps get_mapid."""
+        maps = EarthEngineMaps()
+    
+        # Mock ee.Image and its getMapId method
+        mock_image = mocker.MagicMock()
+        mock_image.getMapId.return_value = {"mapid": "test_id", "urlFormat": "http://test.url"}
+    
+        result = maps.get_mapid(mock_image, {"min": 0, "max": 100})
+    
+>       assert result["mapid"] == "test_id"
+               ^^^^^^^^^^^^^^^
+E       KeyError: 'mapid'
+
+tests\test_earthengine.py:30: KeyError
+____________________________ test_modis_snow_cover ____________________________
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x000002566A59E1A0>
+
+    def test_modis_snow_cover(mocker):
+        """Test ModisProducts.get_modis_snow_cover()"""
+        mocker.patch("earthengine.auth.ee.ServiceAccountCredentials")
+        mocker.patch("earthengine.auth.ee.Initialize")
+    
+        product = ModisProducts()
+    
+        # Mock Earth Engine objects that get chained together during Modis logic
+        mock_image_collection = mocker.patch("earthengine.modis.snow.ee.ImageCollection")
+        mock_collection_instance = mocker.MagicMock()
+    
+        # Chain filters and mapping
+        mock_collection_instance.filterDate.return_value = mock_collection_instance
+        mock_collection_instance.map.return_value = mock_collection_instance
+        mock_collection_instance.mosaic.return_value = mock_collection_instance
+        # When select is called, return another mock image
+        mock_image = mocker.MagicMock()
+        mock_collection_instance.select.return_value = mock_image
+    
+        mock_image_collection.return_value = mock_collection_instance
+    
+        mock_ee_number = mocker.patch("earthengine.modis.snow.ee.Number")
+    
+        # The actual functionality doesn't crash if we mock everything properly
+>       result = product.get_modis_snow_cover(
+            vis_params={"min": 0, "max": 100, "palette": ["red", "green", "blue"]},
+            day_range=10,
+            region="uk",
+            is_png=False,
+            qa_mask="default",
+            snow_class_mask="default",
+            threshold=50
+        )
+E       TypeError: ModisProducts.get_modis_snow_cover() got an unexpected keyword argument 'day_range'
+
+tests\test_earthengine.py:57: TypeError
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.13.12-final-0 _______________
+
+Name                                                 Stmts   Miss  Cover   Missing
+----------------------------------------------------------------------------------
+agenticfeatures\__init__.py                              0      0   100%
+agenticfeatures\climatecolumns\__init__.py               0      0   100%
+agenticfeatures\climatecolumns\agents.py                91     91     0%   1-206
+agenticfeatures\climatecolumns\generics.py              36     36     0%   1-89
+agenticfeatures\climatecolumns\model.py                 11     11     0%   1-17
+agenticfeatures\climatecolumns\testdata.py               1      1     0%   1
+agenticfeatures\climatecolumns\tools.py                 60     60     0%   1-97
+api\newsfeed.py                                         14      0   100%
+api\snow.py                                             43      1    98%   43
+dailytasks\__init__.py                                   0      0   100%
+dailytasks\newsfeed.py                                  39      4    90%   16, 43-44, 55
+dailytasks\newsfeedtools.py                             33      1    97%   26
+earthengine\__init__.py                                  0      0   100%
+earthengine\auth.py                                      9      0   100%
+earthengine\map.py                                      11      1    91%   22
+earthengine\modis\snow.py                               86     73    15%   17-26, 36-56, 76-143
+earthengine\regions.py                                  48     16    67%   36, 40, 48-57, 65-73, 76, 79
+earthengine\sentinel\sentinel.py                       110     31    72%   33, 41, 45, 53-62, 86, 88, 90, 92, 94, 127-128, 139, 142-144, 151-157, 168-171
+main.py                                                 59     11    81%   34, 48-60
+tests\__init__.py                                        0      0   100%
+tests\conftest.py                                       24      0   100%
+tests\integration\__init__.py                            0      0   100%
+tests\integration\agenticfeatures\__init__.py            0      0   100%
+tests\integration\agenticfeatures\test_tools.py         36     36     0%   1-57
+tests\integration\agenticfeatures\test_workflow.py      16     16     0%   1-24
+tests\integration\newsfeed\__init__.py                   0      0   100%
+tests\integration\test_eeauth.py                        43     43     0%   1-65
+tests\integration\test_news.py                          25     25     0%   1-45
+tests\test_api_newsfeed.py                              19      0   100%
+tests\test_api_snow.py                                  44      0   100%
+tests\test_dailytasks.py                                81      6    93%   76-78, 95-97
+tests\test_earthengine.py                               59      4    93%   31, 67-69
+tests\test_main.py                                      32      0   100%
+tests\unit-tests\__init__.py                             0      0   100%
+tests\unit-tests\test_data.py                            1      1     0%   13
+tests\unit-tests\test_utilities.py                      19     19     0%   1-38
+utility\__init__.py                                      0      0   100%
+utility\default_vis_params.py                            2      0   100%
+utility\earthengineutilities.py                         20      0   100%
+----------------------------------------------------------------------------------
+TOTAL                                                 1072    487    55%
+=========================== short test summary info ===========================
+FAILED tests/test_dailytasks.py::test_get_daily_news_cache_expired - TypeErro...
+FAILED tests/test_dailytasks.py::test_get_daily_news_cache_miss - TypeError: ...
+FAILED tests/test_earthengine.py::test_earthengine_maps - KeyError: 'mapid'
+FAILED tests/test_earthengine.py::test_modis_snow_cover - TypeError: ModisPro...
+======================== 4 failed, 17 passed in 7.35s =========================

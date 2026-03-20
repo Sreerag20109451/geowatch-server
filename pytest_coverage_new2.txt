@@ -1,0 +1,58 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\Sreerag Sathian\PycharmProjects\geowatch-server
+plugins: anyio-4.12.1, langsmith-0.7.3, asyncio-1.3.0, cov-7.0.0, mock-3.15.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 23 items
+
+tests\test_api_newsfeed.py ..                                            [  8%]
+tests\test_api_snow.py .....                                             [ 30%]
+tests\test_dailytasks.py .......                                         [ 60%]
+tests\test_earthengine.py .F..                                           [ 78%]
+tests\test_earthengine_coverage.py ..                                    [ 86%]
+tests\test_main.py ...                                                   [100%]
+
+================================== FAILURES ===================================
+____________________________ test_earthengine_maps ____________________________
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x0000020464E67D40>
+
+    def test_earthengine_maps(mocker):
+        """Test EarthEngineMaps get_mapid."""
+        maps = EarthEngineMaps()
+    
+        # Mock ee.Image and its getMapId method
+        mock_image = mocker.MagicMock()
+        mock_image.getMapId.return_value = {"mapid": "test_id", "urlFormat": "http://test.url"}
+    
+        result = maps.get_mapid(mock_image, {"min": 0, "max": 100})
+    
+        assert result["mapobj"]["mapid"] == "test_id"
+>       assert result["url"] == "http://test.url"
+E       AssertionError: assert 'https://eart...s/{z}/{x}/{y}' == 'http://test.url'
+E         
+E         - http://test.url
+E         + https://earthengine.googleapis.com/v1/test_id/tiles/{z}/{x}/{y}
+
+tests\test_earthengine.py:31: AssertionError
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.13.12-final-0 _______________
+
+Name                               Stmts   Miss  Cover   Missing
+----------------------------------------------------------------
+api\newsfeed.py                       14      0   100%
+api\snow.py                           43      1    98%   43
+dailytasks\__init__.py                 0      0   100%
+dailytasks\newsfeed.py                39      1    97%   16
+dailytasks\newsfeedtools.py           33      1    97%   26
+earthengine\__init__.py                0      0   100%
+earthengine\auth.py                    9      0   100%
+earthengine\map.py                    11      1    91%   22
+earthengine\modis\snow.py             86     12    86%   19-20, 41-42, 44-45, 47-48, 50-51, 53-54
+earthengine\regions.py                48     16    67%   36, 40, 48-57, 65-73, 76, 79
+earthengine\sentinel\sentinel.py     110     30    73%   33, 41, 45, 53-62, 86, 88, 90, 92, 94, 127-128, 142-144, 151-157, 168-171
+----------------------------------------------------------------
+TOTAL                                393     62    84%
+=========================== short test summary info ===========================
+FAILED tests/test_earthengine.py::test_earthengine_maps - AssertionError: ass...
+======================== 1 failed, 22 passed in 5.37s =========================

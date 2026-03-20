@@ -1,0 +1,59 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\Sreerag Sathian\PycharmProjects\geowatch-server
+plugins: anyio-4.12.1, langsmith-0.7.3, asyncio-1.3.0, cov-7.0.0, mock-3.15.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 26 items
+
+tests\test_api_newsfeed.py ..                                            [  7%]
+tests\test_api_snow.py .....                                             [ 26%]
+tests\test_dailytasks.py .......                                         [ 53%]
+tests\test_earthengine.py ....                                           [ 69%]
+tests\test_earthengine_coverage.py ..F..                                 [ 88%]
+tests\test_main.py ...                                                   [100%]
+
+================================== FAILURES ===================================
+_________________________ test_modis_regions_coverage _________________________
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x0000023140445300>
+
+    def test_modis_regions_coverage(mocker):
+        product = ModisProducts()
+>       product.get_modis_snow_cover(vis_params={}, region="himalayas")
+
+tests\test_earthengine_coverage.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+earthengine\modis\snow.py:55: in get_modis_snow_cover
+    legendObj = create_legend(vis_params, 'Modis - NDSI', threshold)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vis_params = {}, chartname = 'Modis - NDSI', threshold = None
+
+    def create_legend(vis_params, chartname, threshold=None):
+>       palette = vis_params["palette"]
+                  ^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'palette'
+
+utility\earthengineutilities.py:21: KeyError
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.13.12-final-0 _______________
+
+Name                               Stmts   Miss  Cover   Missing
+----------------------------------------------------------------
+api\newsfeed.py                       14      0   100%
+api\snow.py                           43      1    98%   43
+dailytasks\__init__.py                 0      0   100%
+dailytasks\newsfeed.py                39      1    97%   16
+dailytasks\newsfeedtools.py           33      1    97%   26
+earthengine\__init__.py                0      0   100%
+earthengine\auth.py                    9      0   100%
+earthengine\map.py                    11      1    91%   22
+earthengine\modis\snow.py             86     10    88%   19-20, 44-45, 47-48, 50-51, 53-54
+earthengine\regions.py                48     10    79%   36, 40, 48-57
+earthengine\sentinel\sentinel.py     110     25    77%   33, 41, 45, 53-62, 127-128, 142-144, 151-157, 168-171
+----------------------------------------------------------------
+TOTAL                                393     49    88%
+=========================== short test summary info ===========================
+FAILED tests/test_earthengine_coverage.py::test_modis_regions_coverage - KeyE...
+======================== 1 failed, 25 passed in 7.41s =========================
