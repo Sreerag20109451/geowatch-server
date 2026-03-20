@@ -31,29 +31,34 @@ class NewsFeed:
         pass
 
     async def get_daily_news_from_redis(self):
-        # ... (credentials check) ...
+        if self.redis_url is None:
+            print("No redis url configured, fetching fresh data")
+            return get_newsData()
 
         redis = Redis(url=self.redis_url, token=self.token)
-        raw_data = await redis.get('daily_news_feed')
+        news_data = await redis.get('daily_news_feed')
+        print(f"Raw data from redis: {type(news_data)}")
 
-        # 1. Guard against None (Cache Miss)
-        if raw_data is None:
-            print("Cache miss: fetching fresh data")
-            newsdata = await get_newsData()
-            await self.save_to_redis(newsdata)
-            return newsdata
+        data = None
+        if news_data:
+            try:
+                if isinstance(news_data, str):
+                    data = json.loads(news_data)
+                else:
+                    data = news_data # Already a dict or other type
+            except json.JSONDecodeError:
+                print("Failed to parse redis data, fetching fresh")
+                data = None
 
-        # 2. IMPORTANT: Parse the string from Redis into a Python Dictionary
-        data = json.loads(raw_data)
-
-        # 3. Now you can safely access the string key "create_dtm"
-        last_created = datetime.datetime.fromisoformat(data["create_dtm"])
-
-        if last_created < (datetime.datetime.now() - datetime.timedelta(days=1)):
+        if data:
+            last_created = datetime.datetime.fromisoformat(data["create_dtm"])
+            if last_created > (datetime.datetime.now() - datetime.timedelta(days=1)):
+                return data
             print("Cache expired: fetching fresh data")
-            data = await get_newsData()
-            await self.save_to_redis(data)
 
+        # Fetch fresh data if cache miss or expired
+        data = get_newsData()
+        await self.save_to_redis(data)
         return data
         
 

@@ -1,0 +1,117 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\Sreerag Sathian\PycharmProjects\geowatch-server
+plugins: anyio-4.12.1, langsmith-0.7.3, asyncio-1.3.0, cov-7.0.0, mock-3.15.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 27 items
+
+tests\test_api_newsfeed.py ..                                            [  7%]
+tests\test_api_snow.py .....                                             [ 25%]
+tests\test_dailytasks.py .......                                         [ 51%]
+tests\test_earthengine.py ....                                           [ 66%]
+tests\test_earthengine_coverage.py ..F..F                                [ 88%]
+tests\test_main.py ...                                                   [100%]
+
+================================== FAILURES ===================================
+_________________________ test_modis_regions_coverage _________________________
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x000001DA7324F450>
+
+    def test_modis_regions_coverage(mocker):
+        product = ModisProducts()
+        vp = {"palette": ["red"]}
+>       product.get_modis_snow_cover(vis_params=vp, region="himalayas")
+
+tests\test_earthengine_coverage.py:67: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+earthengine\modis\snow.py:55: in get_modis_snow_cover
+    legendObj = create_legend(vis_params, 'Modis - NDSI', threshold)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+vis_params = {'palette': ['red']}, chartname = 'Modis - NDSI', threshold = None
+
+    def create_legend(vis_params, chartname, threshold=None):
+        palette = vis_params["palette"]
+>       min = float(threshold) if threshold is not None else vis_params["min"]
+                                                             ^^^^^^^^^^^^^^^^^
+E       KeyError: 'min'
+
+utility\earthengineutilities.py:22: KeyError
+________________________ test_regions_init_ee_coverage ________________________
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x000001DA7324FBA0>
+
+    def test_regions_init_ee_coverage(mocker):
+        EarthEngineRegion._ee_initialized = False
+        mocker.patch("os.path.exists", side_effect=lambda p: str(p) == "/services/key.json")
+        EarthEngineRegion._init_ee()
+    
+        EarthEngineRegion._ee_initialized = False
+        mocker.patch("os.path.exists", return_value=False)
+        mocker.patch("os.getenv", return_value="fake_json")
+        mocker.patch("builtins.open", mocker.mock_open())
+>       EarthEngineRegion._init_ee()
+
+tests\test_earthengine_coverage.py:105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+cls = <class 'earthengine.regions.EarthEngineRegion'>
+
+    @classmethod
+    def _init_ee(cls):
+        if cls._ee_initialized:
+            return
+    
+        BASE_DIR = pathlib.Path(__file__).parent.parent.resolve()
+        ENV_PATH = BASE_DIR / "config" / ".env"
+    
+        if(ENV_PATH.exists()):
+            load_dotenv(dotenv_path=ENV_PATH)
+        else:
+            print("Reading from shared variables in prod")
+    
+        service_account = os.getenv("SERVICE_ACCOUNT")
+        if not service_account:
+            raise RuntimeError("SERVICE_ACCOUNT environment variable not set")
+    
+        # Resolve key path
+        local_key = os.path.join(BASE_DIR, "key.json")
+        railway_key = "/services/key.json"
+    
+        if os.path.exists(local_key):
+            key_path = local_key
+        elif os.path.exists(railway_key):
+            key_path = railway_key
+        else:
+            key_json = os.getenv("KEY_JSON")
+            if not key_json:
+                raise RuntimeError("No Earth Engine key found")
+    
+>           key_path = os.path.join(base_dir, "temp_key.json")
+                                    ^^^^^^^^
+E           NameError: name 'base_dir' is not defined
+
+earthengine\regions.py:55: NameError
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.13.12-final-0 _______________
+
+Name                               Stmts   Miss  Cover   Missing
+----------------------------------------------------------------
+api\newsfeed.py                       14      0   100%
+api\snow.py                           43      1    98%   43
+dailytasks\__init__.py                 0      0   100%
+dailytasks\newsfeed.py                39      1    97%   16
+dailytasks\newsfeedtools.py           33      1    97%   26
+earthengine\__init__.py                0      0   100%
+earthengine\auth.py                    9      0   100%
+earthengine\map.py                    11      1    91%   22
+earthengine\modis\snow.py             86     10    88%   19-20, 44-45, 47-48, 50-51, 53-54
+earthengine\regions.py                48      5    90%   36, 40, 53, 56-57
+earthengine\sentinel\sentinel.py     110     25    77%   33, 41, 45, 53-62, 127-128, 142-144, 151-157, 168-171
+----------------------------------------------------------------
+TOTAL                                393     44    89%
+=========================== short test summary info ===========================
+FAILED tests/test_earthengine_coverage.py::test_modis_regions_coverage - KeyE...
+FAILED tests/test_earthengine_coverage.py::test_regions_init_ee_coverage - Na...
+======================== 2 failed, 25 passed in 4.44s =========================

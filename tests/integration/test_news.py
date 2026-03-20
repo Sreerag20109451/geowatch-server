@@ -8,19 +8,15 @@ from dailytasks.newsfeedtools import get_newsData
 from dailytasks.newsfeed import NewsFeed
 
 
+import pathlib
+import json
 
 class NewsFeedTests(unittest.IsolatedAsyncioTestCase):
 
-
-
-    def setup(self):
+    def setUp(self):
         self.envpath = pathlib.Path(__file__).parent.parent.parent.resolve() / "config" / ".env"
         load_dotenv(dotenv_path=self.envpath)
         self.apikey = os.getenv("NEWSDATA_API_KEY")
-
-        """
-    Verify if the newsdata io responds with news objects
-    """
 
     def test_getnews(self):
         print("---Fetching news data -------")
